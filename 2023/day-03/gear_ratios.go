@@ -20,10 +20,6 @@ var positions []NumberPosition
 var maxXPosition int = 1000
 var maxYPosition int = 1000
 
-/*
-
- */
-
 func findIntegers(line string, y int) []NumberPosition {
 	var positions []NumberPosition
 	var startPos, endPos, number int
@@ -33,7 +29,7 @@ func findIntegers(line string, y int) []NumberPosition {
 		if err == io.EOF {
 			break
 		}
-		if n == 0 {
+		if n <= 0 {
 			reader.ReadByte() // skip non-digit character
 			continue
 		}
@@ -78,11 +74,17 @@ func addAllCellsWithSymbolNeighbors(matrix [][]bool, positions []NumberPosition)
 	for _, pos := range positions {
 		value := NumberHasNeighborSymbols(matrix, pos)
 		if value > 0 {
-			fmt.Printf("%4d at Ln %3d, Col %3d is a part number\n", pos.Number, pos.StartYPosition, pos.StartXPosition)
+			// fmt.Printf("%4d at Ln %3d, Col %3d is a part number\n", pos.Number, pos.StartYPosition, pos.StartXPosition)
 			sum += value
 		}
 	}
 	return sum
+}
+
+func removeSigns(s string) string {
+	s = strings.ReplaceAll(s, "+", "#")
+	s = strings.ReplaceAll(s, "-", "#")
+	return s
 }
 
 func debugNumbersAndPositions(positions []NumberPosition) {
@@ -128,7 +130,7 @@ func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		line := scanner.Text()
+		line := removeSigns(scanner.Text())
 		y++ // y is 1-based
 		positions = append(positions, findIntegers(line, y)...)
 		findSymbolsInLine(line, symbols[y])
