@@ -84,6 +84,12 @@ func (d *Deck) AddCard(c Card) {
 	d.Cards = append(d.Cards, c)
 }
 
+func (d *Deck) CopyCardsToEndofDeck(start int, copies int) {
+	for i := 0; i < copies; i++ {
+		d.Cards = append(d.Cards, d.Cards[start+i])
+	}
+}
+
 func ExtractIntsFromString(s string) []int {
 	re := regexp.MustCompile(`\d+`)
 	match := re.FindAllString(s, -1)
@@ -119,6 +125,15 @@ func main() {
 	for _, card := range d.Cards {
 		points, _ := TotalCardPointsAndMatches(&card)
 		total += points
+
 	}
 	fmt.Println(total)
+	for i, card := range d.Cards {
+		_, matches := TotalCardPointsAndMatches(&card)
+		fmt.Println(card.Number, " has ", matches, " matches")
+		for j := 0; j < matches; j++ {
+			d.CopyCardsToEndofDeck(i, card.Copies)
+		}
+	}
+	fmt.Println(len(d.Cards))
 }
