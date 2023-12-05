@@ -14,7 +14,6 @@ type Card struct {
 	Number    int
 	Winning   []int
 	Possessed []int
-	Copies    int
 }
 
 type Deck struct {
@@ -84,9 +83,18 @@ func (d *Deck) AddCard(c Card) {
 	d.Cards = append(d.Cards, c)
 }
 
-func (d *Deck) CopyCardsToEndofDeck(start int, copies int) {
-	for i := 0; i < copies; i++ {
-		d.Cards = append(d.Cards, d.Cards[start+i])
+func (d *Deck) CopyCardsToEndofDeck(Number int, copies int) {
+	start := 0
+	for start < len(d.Cards) {
+		if d.Cards[start].Number == Number {
+			break
+		}
+		start++
+	}
+	for i := start + 1; copies > 0; i++ {
+		d.Cards = append(d.Cards, d.Cards[i])
+		copies--
+		// fmt.Println("Copying card ", d.Cards[i].Number, " to end of deck")
 	}
 }
 
@@ -119,7 +127,6 @@ func main() {
 		c.Number, _ = extractInt(left)
 		c.Winning = ExtractIntsFromString(winning)
 		c.Possessed = ExtractIntsFromString(possessed)
-		c.Copies = 1
 		d.AddCard(c)
 	}
 	for _, card := range d.Cards {
@@ -128,12 +135,14 @@ func main() {
 
 	}
 	fmt.Println(total)
-	for i, card := range d.Cards {
+	i := 0
+	for i < len(d.Cards) {
+		card := d.Cards[i]
 		_, matches := TotalCardPointsAndMatches(&card)
-		fmt.Println(card.Number, " has ", matches, " matches")
-		for j := 0; j < matches; j++ {
-			d.CopyCardsToEndofDeck(i, card.Copies)
-		}
+		// fmt.Println("Card ", card.Number, " has ", matches, " matches")
+		d.CopyCardsToEndofDeck(card.Number, matches)
+		i++
+		// fmt.Println("we now have ", len(d.Cards), " cards")
 	}
 	fmt.Println(len(d.Cards))
 }
