@@ -184,4 +184,19 @@ func main() {
 		}
 	}
 	fmt.Println(lowest)
+
+	lowest = math.MaxInt
+	for i := 0; i < len(toBePlanted); i += 2 {
+		lo := toBePlanted[i]
+		hi := toBePlanted[i] + toBePlanted[i+1]
+		// fmt.Println("lo = ", lo, ", hi = ", hi)
+		for j := lo; j < hi; j++ {
+			x := mapSeedToLocation(j, soilMaps, fertilizerMaps, waterMaps, lightMaps, temperatureMaps, humidityMaps, locationMaps)
+			if x < lowest {
+				lowest = x
+			}
+		}
+	}
+	fmt.Println(lowest)
+
 }
