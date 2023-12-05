@@ -1,5 +1,5 @@
 *.exe
 bin/
 input.txt
-example.txt
+input-example.txt
 a.out
