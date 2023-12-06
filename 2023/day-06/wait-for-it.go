@@ -9,12 +9,10 @@ import (
 	"strings"
 )
 
-type Race struct {
-	Time     []int
-	Distance []int
+type Races struct {
+	TimeMS     []int
+	DistanceMM []int
 }
-
-type RaceList []Race
 
 func splitByColon(s string) (string, string, error) {
 	parts := strings.SplitN(s, ":", 2)
@@ -24,8 +22,23 @@ func splitByColon(s string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
+func part1(r Races) int {
+	answer := 1
+	for i := 0; i < len(r.TimeMS); i++ {
+		winners := 0
+		for buttonMS := 1; buttonMS < r.TimeMS[i]-1; buttonMS++ {
+			if buttonMS*(r.TimeMS[i]-buttonMS) > r.DistanceMM[i] {
+				winners++
+				//fmt.Fprintln(os.Stderr, "winner = ", buttonMS, "ms")
+			}
+		}
+		answer *= winners
+	}
+	return answer
+}
+
 func main() {
-	var RaceList Race
+	var r Races
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -47,8 +60,8 @@ func main() {
 						fmt.Fprintln(os.Stderr, "Error converting string to integer: ", err)
 						os.Exit(1)
 					}
-					RaceList.Time = append(RaceList.Time, num)
-					fmt.Fprintln(os.Stderr, "added time: ", num)
+					r.TimeMS = append(r.TimeMS, num)
+					//fmt.Fprintln(os.Stderr, "added time: ", num)
 				}
 			} else if strings.EqualFold(left, "distance") {
 				str := right
@@ -60,21 +73,23 @@ func main() {
 						fmt.Fprintln(os.Stderr, "Error converting string to integer: ", err)
 						os.Exit(1)
 					}
-					RaceList.Distance = append(RaceList.Distance, num)
-					fmt.Fprintln(os.Stderr, "added distance: ", num)
+					r.DistanceMM = append(r.DistanceMM, num)
+					//fmt.Fprintln(os.Stderr, "added distance: ", num)
 				}
 			} else {
 				fmt.Fprintln(os.Stderr, "Unknown map")
 				os.Exit(1)
 			}
-			continue
+
 		}
 	}
-	if len(RaceList.Time) != len(RaceList.Distance) {
+	if len(r.TimeMS) != len(r.DistanceMM) {
 		fmt.Fprintln(os.Stderr, "Error: time and distance lists are not the same length")
 		os.Exit(1)
 	}
-	fmt.Fprintln(os.Stderr, "time list: ", RaceList.Time)
-	fmt.Fprintln(os.Stderr, "distance list: ", RaceList.Distance)
+	fmt.Fprintln(os.Stderr, "time list: ", r.TimeMS)
+	fmt.Fprintln(os.Stderr, "distance list: ", r.DistanceMM)
+
+	fmt.Println(part1(r))
 
 }
