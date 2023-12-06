@@ -22,7 +22,7 @@ func splitByColon(s string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
-func part1(r Races) int {
+func solve(r Races) int {
 	answer := 1
 	for i := 0; i < len(r.TimeMS); i++ {
 		winners := 0
@@ -38,12 +38,13 @@ func part1(r Races) int {
 }
 
 func main() {
-	var r Races
+	var r [2]Races
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
+
 		if len(line) == 0 {
 			continue // skip blank lines
 		}
@@ -53,29 +54,35 @@ func main() {
 			if strings.EqualFold(left, "time") {
 				str := right
 				fields := strings.Fields(str)
-
+				nospace := strings.Join(strings.Fields(str), "")
+				fmt.Fprintln(os.Stderr, "nospace = ", nospace)
 				for _, field := range fields {
 					num, err := strconv.Atoi(field)
 					if err != nil {
 						fmt.Fprintln(os.Stderr, "Error converting string to integer: ", err)
 						os.Exit(1)
 					}
-					r.TimeMS = append(r.TimeMS, num)
+					r[0].TimeMS = append(r[0].TimeMS, num)
 					//fmt.Fprintln(os.Stderr, "added time: ", num)
 				}
+				num, _ := strconv.Atoi(nospace)
+				r[1].TimeMS = append(r[1].TimeMS, num)
 			} else if strings.EqualFold(left, "distance") {
 				str := right
 				fields := strings.Fields(str)
-
+				nospace := strings.Join(strings.Fields(str), "")
+				fmt.Fprintln(os.Stderr, "nospace = ", nospace)
 				for _, field := range fields {
 					num, err := strconv.Atoi(field)
 					if err != nil {
 						fmt.Fprintln(os.Stderr, "Error converting string to integer: ", err)
 						os.Exit(1)
 					}
-					r.DistanceMM = append(r.DistanceMM, num)
+					r[0].DistanceMM = append(r[0].DistanceMM, num)
 					//fmt.Fprintln(os.Stderr, "added distance: ", num)
 				}
+				num, _ := strconv.Atoi(nospace)
+				r[1].DistanceMM = append(r[1].DistanceMM, num)
 			} else {
 				fmt.Fprintln(os.Stderr, "Unknown map")
 				os.Exit(1)
@@ -83,13 +90,16 @@ func main() {
 
 		}
 	}
-	if len(r.TimeMS) != len(r.DistanceMM) {
+	if len(r[0].TimeMS) != len(r[0].DistanceMM) {
 		fmt.Fprintln(os.Stderr, "Error: time and distance lists are not the same length")
 		os.Exit(1)
 	}
-	fmt.Fprintln(os.Stderr, "time list: ", r.TimeMS)
-	fmt.Fprintln(os.Stderr, "distance list: ", r.DistanceMM)
+	fmt.Fprintln(os.Stderr, "time list: ", r[0].TimeMS)
+	fmt.Fprintln(os.Stderr, "distance list: ", r[0].DistanceMM)
+	fmt.Fprintln(os.Stderr, "time list: ", r[1].TimeMS)
+	fmt.Fprintln(os.Stderr, "distance list: ", r[1].DistanceMM)
 
-	fmt.Println(part1(r))
+	fmt.Println(solve(r[0]))
+	fmt.Println(solve(r[1]))
 
 }
