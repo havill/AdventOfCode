@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -94,12 +95,118 @@ func removePunctuationAndWhitespace(s string) string {
 	return strings.Map(f, s)
 }
 
+func IsFiveOfAKind(hand []Card) bool {
+	counts := make(map[Card]int)
+	for _, card := range hand {
+		counts[card]++
+		if counts[card] == 5 {
+			return true
+		}
+	}
+	return false
+}
+
+func IsFourOfAKind(hand []Card) bool {
+	counts := make(map[Card]int)
+	for _, card := range hand {
+		counts[card]++
+		if counts[card] == 4 {
+			return true
+		}
+	}
+	return false
+}
+
+func IsFullHouse(hand []Card) bool {
+	counts := make(map[Card]int)
+	for _, card := range hand {
+		counts[card]++
+	}
+
+	var pair, threeOfAKind bool
+	for _, count := range counts {
+		if count == 2 {
+			pair = true
+		} else if count == 3 {
+			threeOfAKind = true
+		}
+	}
+
+	return pair && threeOfAKind
+}
+
+func IsThreeOfAKind(hand []Card) bool {
+	counts := make(map[Card]int)
+	for _, card := range hand {
+		counts[card]++
+		if counts[card] == 3 {
+			return true
+		}
+	}
+	return false
+}
+
+func IsTwoPair(hand []Card) bool {
+	counts := make(map[Card]int)
+	for _, card := range hand {
+		counts[card]++
+	}
+
+	pairs := 0
+	for _, count := range counts {
+		if count == 2 {
+			pairs++
+		}
+	}
+
+	return pairs == 2
+}
+
+func IsOnePair(hand []Card) bool {
+	counts := make(map[Card]int)
+	for _, card := range hand {
+		counts[card]++
+	}
+
+	for _, count := range counts {
+		if count == 2 {
+			return true
+		}
+	}
+
+	return false
+}
+
+func less(a, b []Card) bool {
+	for i := 0; i < len(a) && i < len(b); i++ {
+		if a[i] != b[i] {
+			return a[i] < b[i]
+		}
+	}
+	return len(a) < len(b)
+}
+
+func totalWinnings(hands []Parsed) int {
+	total := 0
+	for rank, hand := range hands {
+		total += hand.Bid * rank
+	}
+	return total
+}
+
 func main() {
+	var hands []Parsed = make([]Parsed, 1)
+	// prefix with sentinel value so first real hand is rank 1
+	hands[0] = Parsed{Hand: []Card{Zero, Zero, Zero, Zero, Zero}, Bid: 0, Type: -1}
+
 	scanner := bufio.NewScanner(os.Stdin)
+
 	for scanner.Scan() {
 		var x Parsed
 
 		line := scanner.Text()
+		//fmt.Fprintf(os.Stderr, "line = '%s'\n", line)
+
 		line = strings.TrimSpace(line)
 		lastSpace := strings.LastIndex(line, " ")
 		left := line[:lastSpace]
@@ -111,11 +218,34 @@ func main() {
 		if err != nil {
 			fmt.Println("Error converting string to int:", err)
 		}
-
-		fmt.Println("hand  = ", hand)
-		fmt.Println("Bid   = ", x.Bid)
-
 		x.Bid = i
+		for _, c := range hand {
+			card, err := charToCard(c)
+			if err != nil {
+				// handle error
+			}
+			x.Hand = append(x.Hand, card)
+		}
+		if IsFiveOfAKind(x.Hand) {
+			x.Type = Five_of_a_kind
+		} else if IsFourOfAKind(x.Hand) {
+			x.Type = Four_of_a_kind
+		} else if IsFullHouse(x.Hand) {
+			x.Type = Full_house
+		} else if IsThreeOfAKind(x.Hand) {
+			x.Type = Three_of_a_kind
+		} else if IsTwoPair(x.Hand) {
+			x.Type = Two_pair
+		} else if IsOnePair(x.Hand) {
+			x.Type = One_pair
+		} else {
+			x.Type = High_card
+		}
+		hands = append(hands, x)
+
+		//fmt.Fprintln(os.Stderr, "Hand  = ", x.Hand)
+		//fmt.Fprintln(os.Stderr, "Bid   = ", x.Bid)
+		//fmt.Fprintln(os.Stderr, "Type  = ", x.Type)
 
 		/*
 			p := Player{
@@ -128,4 +258,15 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "reading standard input:", err)
 	}
+
+	sort.Slice(hands, func(i, j int) bool {
+		if hands[i].Type != hands[j].Type {
+			return hands[i].Type < hands[j].Type
+		}
+		return less(hands[i].Hand, hands[j].Hand)
+	})
+
+	// fmt.Fprintln(os.Stderr, "hands = ", hands)
+	fmt.Println(totalWinnings(hands))
+
 }
