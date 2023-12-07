@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 type HandType int
@@ -23,8 +24,8 @@ const (
 type Card int
 
 const (
-	Zero Card = iota
-	One
+	Zero Card = iota // this is a sentinal value and should never be used
+	One              // this is a bogus value to make enum Two start at 2
 	Two
 	Three
 	Four
@@ -40,7 +41,7 @@ const (
 	Ace
 )
 
-type List struct {
+type Parsed struct {
 	Hand []Card
 	Bid  int
 	Type HandType
@@ -83,27 +84,38 @@ func charToCard(c rune) (Card, error) {
 	}
 }
 
+func removePunctuationAndWhitespace(s string) string {
+	f := func(r rune) rune {
+		if unicode.IsPunct(r) || unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}
+	return strings.Map(f, s)
+}
+
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
-
-	fmt.Println("Enter strings, one per line:")
-
 	for scanner.Scan() {
+		var x Parsed
+
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
 		lastSpace := strings.LastIndex(line, " ")
 		left := line[:lastSpace]
 		right := line[lastSpace+1:]
-		left = strings.Join(strings.Fields(left), "")
+		left = removePunctuationAndWhitespace(left)
 		hand := strings.ToUpper(left)
 
-		bid, err := strconv.Atoi(right)
+		i, err := strconv.Atoi(right)
 		if err != nil {
 			fmt.Println("Error converting string to int:", err)
 		}
 
 		fmt.Println("hand  = ", hand)
-		fmt.Println("Bid   = ", bid)
+		fmt.Println("Bid   = ", x.Bid)
+
+		x.Bid = i
 
 		/*
 			p := Player{
