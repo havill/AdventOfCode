@@ -26,7 +26,7 @@ type Card int
 
 const (
 	Zero Card = iota // this is a sentinal value and should never be used
-	One              // this is a bogus value to make enum Two start at 2
+	Joker
 	Two
 	Three
 	Four
@@ -48,12 +48,12 @@ type Parsed struct {
 	Type HandType
 }
 
-func charToCard(c rune) (Card, error) {
+func charToCard(c rune, jokers bool) (Card, error) {
 	switch c {
 	case '0':
 		return Zero, nil
 	case '1':
-		return One, nil
+		return Joker, nil
 	case '2':
 		return Two, nil
 	case '3':
@@ -73,6 +73,9 @@ func charToCard(c rune) (Card, error) {
 	case 'T':
 		return Ten, nil
 	case 'J':
+		if jokers {
+			return Joker, nil
+		}
 		return Jack, nil
 	case 'Q':
 		return Queen, nil
@@ -97,37 +100,60 @@ func removePunctuationAndWhitespace(s string) string {
 
 func IsFiveOfAKind(hand []Card) bool {
 	counts := make(map[Card]int)
+	var jokers int
 	for _, card := range hand {
-		counts[card]++
-		if counts[card] == 5 {
+		if card == Joker {
+			jokers++
+		} else {
+			counts[card]++
+		}
+	}
+
+	for _, count := range counts {
+		if count+jokers >= 5 {
 			return true
 		}
 	}
+
 	return false
 }
 
 func IsFourOfAKind(hand []Card) bool {
 	counts := make(map[Card]int)
+	var jokers int
 	for _, card := range hand {
-		counts[card]++
-		if counts[card] == 4 {
+		if card == Joker {
+			jokers++
+		} else {
+			counts[card]++
+		}
+	}
+
+	for _, count := range counts {
+		if count+jokers >= 4 {
 			return true
 		}
 	}
+
 	return false
 }
 
 func IsFullHouse(hand []Card) bool {
 	counts := make(map[Card]int)
+	var jokers int
 	for _, card := range hand {
-		counts[card]++
+		if card == Joker {
+			jokers++
+		} else {
+			counts[card]++
+		}
 	}
 
 	var pair, threeOfAKind bool
 	for _, count := range counts {
-		if count == 2 {
+		if count+jokers == 2 {
 			pair = true
-		} else if count == 3 {
+		} else if count+jokers >= 3 {
 			threeOfAKind = true
 		}
 	}
@@ -137,39 +163,61 @@ func IsFullHouse(hand []Card) bool {
 
 func IsThreeOfAKind(hand []Card) bool {
 	counts := make(map[Card]int)
+	var jokers int
 	for _, card := range hand {
-		counts[card]++
-		if counts[card] == 3 {
+		if card == Joker {
+			jokers++
+		} else {
+			counts[card]++
+		}
+	}
+
+	for _, count := range counts {
+		if count+jokers >= 3 {
 			return true
 		}
 	}
+
 	return false
 }
 
 func IsTwoPair(hand []Card) bool {
 	counts := make(map[Card]int)
+	var jokers int
 	for _, card := range hand {
-		counts[card]++
+		if card == Joker {
+			jokers++
+		} else {
+			counts[card]++
+		}
 	}
 
 	pairs := 0
 	for _, count := range counts {
-		if count == 2 {
+		if count+jokers >= 2 {
 			pairs++
+			if jokers > 0 {
+				jokers--
+			}
 		}
 	}
 
-	return pairs == 2
+	return pairs >= 2
 }
 
 func IsOnePair(hand []Card) bool {
 	counts := make(map[Card]int)
+	var jokers int
 	for _, card := range hand {
-		counts[card]++
+		if card == Joker {
+			jokers++
+		} else {
+			counts[card]++
+		}
 	}
 
 	for _, count := range counts {
-		if count == 2 {
+		if count+jokers >= 2 {
 			return true
 		}
 	}
@@ -194,15 +242,47 @@ func totalWinnings(hands []Parsed) int {
 	return total
 }
 
+func appendCardToHand(c rune, x *Parsed, jokersWild bool) error {
+	card, err := charToCard(c, jokersWild)
+	if err != nil {
+		return fmt.Errorf("Error converting char to a card: %v", c)
+	}
+	x.Hand = append(x.Hand, card)
+	return nil
+}
+
+func determineHandTypeAndAppend(x *Parsed, hands []Parsed) []Parsed {
+	if IsFiveOfAKind(x.Hand) {
+		x.Type = Five_of_a_kind
+	} else if IsFourOfAKind(x.Hand) {
+		x.Type = Four_of_a_kind
+	} else if IsFullHouse(x.Hand) {
+		x.Type = Full_house
+	} else if IsThreeOfAKind(x.Hand) {
+		x.Type = Three_of_a_kind
+	} else if IsTwoPair(x.Hand) {
+		x.Type = Two_pair
+	} else if IsOnePair(x.Hand) {
+		x.Type = One_pair
+	} else {
+		x.Type = High_card
+	}
+	return append(hands, *x)
+}
+
 func main() {
 	var hands []Parsed = make([]Parsed, 1)
 	// prefix with sentinel value so first real hand is rank 1
 	hands[0] = Parsed{Hand: []Card{Zero, Zero, Zero, Zero, Zero}, Bid: 0, Type: -1}
 
+	var jokerHands []Parsed = make([]Parsed, 1)
+	// prefix with sentinel value so first real hand is rank 1
+	jokerHands[0] = Parsed{Hand: []Card{Zero, Zero, Zero, Zero, Zero}, Bid: 0, Type: -1}
+
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for scanner.Scan() {
-		var x Parsed
+		var x, y Parsed
 
 		line := scanner.Text()
 		//fmt.Fprintf(os.Stderr, "line = '%s'\n", line)
@@ -219,40 +299,17 @@ func main() {
 			fmt.Println("Error converting string to int:", err)
 		}
 		x.Bid = i
+		y.Bid = i
 		for _, c := range hand {
-			card, err := charToCard(c)
-			if err != nil {
-				// handle error
-			}
-			x.Hand = append(x.Hand, card)
+			appendCardToHand(c, &x, false)
+			appendCardToHand(c, &y, true)
 		}
-		if IsFiveOfAKind(x.Hand) {
-			x.Type = Five_of_a_kind
-		} else if IsFourOfAKind(x.Hand) {
-			x.Type = Four_of_a_kind
-		} else if IsFullHouse(x.Hand) {
-			x.Type = Full_house
-		} else if IsThreeOfAKind(x.Hand) {
-			x.Type = Three_of_a_kind
-		} else if IsTwoPair(x.Hand) {
-			x.Type = Two_pair
-		} else if IsOnePair(x.Hand) {
-			x.Type = One_pair
-		} else {
-			x.Type = High_card
-		}
-		hands = append(hands, x)
+		hands = determineHandTypeAndAppend(&x, hands)
+		jokerHands = determineHandTypeAndAppend(&y, jokerHands)
 
 		//fmt.Fprintln(os.Stderr, "Hand  = ", x.Hand)
 		//fmt.Fprintln(os.Stderr, "Bid   = ", x.Bid)
 		//fmt.Fprintln(os.Stderr, "Type  = ", x.Type)
-
-		/*
-			p := Player{
-				Hand: []Card{One, Two, Three},
-				Bid:  5,
-			}
-		*/
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -266,7 +323,15 @@ func main() {
 		return less(hands[i].Hand, hands[j].Hand)
 	})
 
+	sort.Slice(jokerHands, func(i, j int) bool {
+		if jokerHands[i].Type != jokerHands[j].Type {
+			return jokerHands[i].Type < jokerHands[j].Type
+		}
+		return less(jokerHands[i].Hand, jokerHands[j].Hand)
+	})
+
 	// fmt.Fprintln(os.Stderr, "hands = ", hands)
 	fmt.Println(totalWinnings(hands))
+	fmt.Println(totalWinnings(jokerHands))
 
 }
