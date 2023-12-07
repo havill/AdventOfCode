@@ -109,6 +109,10 @@ func IsFiveOfAKind(hand []Card) bool {
 		}
 	}
 
+	if jokers >= 5 {
+		return true
+	}
+
 	for _, count := range counts {
 		if count+jokers >= 5 {
 			return true
@@ -150,11 +154,20 @@ func IsFullHouse(hand []Card) bool {
 	}
 
 	var pair, threeOfAKind bool
-	for _, count := range counts {
-		if count+jokers == 2 {
-			pair = true
-		} else if count+jokers >= 3 {
+	var threeOfAKindCard Card
+	for card, count := range counts {
+		if count+jokers >= 3 {
 			threeOfAKind = true
+			threeOfAKindCard = card
+			jokers -= 3 - count
+			break
+		}
+	}
+
+	for card, count := range counts {
+		if card != threeOfAKindCard && count+jokers >= 2 {
+			pair = true
+			break
 		}
 	}
 
@@ -270,6 +283,34 @@ func determineHandTypeAndAppend(x *Parsed, hands []Parsed) []Parsed {
 	return append(hands, *x)
 }
 
+func handTypeToString(handType int) string {
+	switch handType {
+	case 0:
+		return "High_card"
+	case 1:
+		return "One_pair"
+	case 2:
+		return "Two_pair"
+	case 3:
+		return "Three_of_a_kind"
+	case 4:
+		return "Full_house"
+	case 5:
+		return "Four_of_a_kind"
+	case 6:
+		return "Five_of_a_kind"
+	default:
+		return "Unknown"
+	}
+}
+
+func printHands(jokerHands []Parsed) {
+	for _, hand := range jokerHands {
+		fmt.Print("Hand:", hand.Hand)
+		fmt.Println("\tType:", handTypeToString(int(hand.Type)))
+	}
+}
+
 func main() {
 	var hands []Parsed = make([]Parsed, 1)
 	// prefix with sentinel value so first real hand is rank 1
@@ -330,7 +371,8 @@ func main() {
 		return less(jokerHands[i].Hand, jokerHands[j].Hand)
 	})
 
-	// fmt.Fprintln(os.Stderr, "hands = ", hands)
+	// printHands(jokerHands)
+
 	fmt.Println(totalWinnings(hands))
 	fmt.Println(totalWinnings(jokerHands))
 
