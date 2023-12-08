@@ -43,12 +43,21 @@ func parseInput(line string) *node {
 	return n
 }
 
+func isStartingNode(label string) bool {
+	return strings.HasSuffix(label, "A")
+}
+
+func isEndingNode(label string) bool {
+	return strings.HasSuffix(label, "Z")
+}
+
 func main() {
 	var instructions string
 	var instructionsI int = 0
 	var steps int = 0
 	var network Network = make(Network)
 	var youAreHere *node
+	var ghosts []*node
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
