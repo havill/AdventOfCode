@@ -98,7 +98,7 @@ func removePunctuationAndWhitespace(s string) string {
 	return strings.Map(f, s)
 }
 
-func IsFiveOfAKind(hand []Card) bool {
+func IsZOfAKind(hand []Card, z int) bool {
 	counts := make(map[Card]int)
 	var jokers int
 	for _, card := range hand {
@@ -108,37 +108,14 @@ func IsFiveOfAKind(hand []Card) bool {
 			counts[card]++
 		}
 	}
-
-	if jokers >= 5 {
+	if jokers >= z {
 		return true
 	}
-
 	for _, count := range counts {
-		if count+jokers >= 5 {
+		if count+jokers >= z {
 			return true
 		}
 	}
-
-	return false
-}
-
-func IsFourOfAKind(hand []Card) bool {
-	counts := make(map[Card]int)
-	var jokers int
-	for _, card := range hand {
-		if card == Joker {
-			jokers++
-		} else {
-			counts[card]++
-		}
-	}
-
-	for _, count := range counts {
-		if count+jokers >= 4 {
-			return true
-		}
-	}
-
 	return false
 }
 
@@ -152,7 +129,6 @@ func IsFullHouse(hand []Card) bool {
 			counts[card]++
 		}
 	}
-
 	var pair, threeOfAKind bool
 	var threeOfAKindCard Card
 	for card, count := range counts {
@@ -163,35 +139,13 @@ func IsFullHouse(hand []Card) bool {
 			break
 		}
 	}
-
 	for card, count := range counts {
 		if card != threeOfAKindCard && count+jokers >= 2 {
 			pair = true
 			break
 		}
 	}
-
 	return pair && threeOfAKind
-}
-
-func IsThreeOfAKind(hand []Card) bool {
-	counts := make(map[Card]int)
-	var jokers int
-	for _, card := range hand {
-		if card == Joker {
-			jokers++
-		} else {
-			counts[card]++
-		}
-	}
-
-	for _, count := range counts {
-		if count+jokers >= 3 {
-			return true
-		}
-	}
-
-	return false
 }
 
 func IsTwoPair(hand []Card) bool {
@@ -204,7 +158,6 @@ func IsTwoPair(hand []Card) bool {
 			counts[card]++
 		}
 	}
-
 	pairs := 0
 	for _, count := range counts {
 		if count+jokers >= 2 {
@@ -214,28 +167,7 @@ func IsTwoPair(hand []Card) bool {
 			}
 		}
 	}
-
 	return pairs >= 2
-}
-
-func IsOnePair(hand []Card) bool {
-	counts := make(map[Card]int)
-	var jokers int
-	for _, card := range hand {
-		if card == Joker {
-			jokers++
-		} else {
-			counts[card]++
-		}
-	}
-
-	for _, count := range counts {
-		if count+jokers >= 2 {
-			return true
-		}
-	}
-
-	return false
 }
 
 func less(a, b []Card) bool {
@@ -265,50 +197,22 @@ func appendCardToHand(c rune, x *Parsed, jokersWild bool) error {
 }
 
 func determineHandTypeAndAppend(x *Parsed, hands []Parsed) []Parsed {
-	if IsFiveOfAKind(x.Hand) {
+	if IsZOfAKind(x.Hand, 5) {
 		x.Type = Five_of_a_kind
-	} else if IsFourOfAKind(x.Hand) {
+	} else if IsZOfAKind(x.Hand, 4) {
 		x.Type = Four_of_a_kind
 	} else if IsFullHouse(x.Hand) {
 		x.Type = Full_house
-	} else if IsThreeOfAKind(x.Hand) {
+	} else if IsZOfAKind(x.Hand, 3) {
 		x.Type = Three_of_a_kind
 	} else if IsTwoPair(x.Hand) {
 		x.Type = Two_pair
-	} else if IsOnePair(x.Hand) {
+	} else if IsZOfAKind(x.Hand, 2) {
 		x.Type = One_pair
 	} else {
 		x.Type = High_card
 	}
 	return append(hands, *x)
-}
-
-func handTypeToString(handType int) string {
-	switch handType {
-	case 0:
-		return "High_card"
-	case 1:
-		return "One_pair"
-	case 2:
-		return "Two_pair"
-	case 3:
-		return "Three_of_a_kind"
-	case 4:
-		return "Full_house"
-	case 5:
-		return "Four_of_a_kind"
-	case 6:
-		return "Five_of_a_kind"
-	default:
-		return "Unknown"
-	}
-}
-
-func printHands(jokerHands []Parsed) {
-	for _, hand := range jokerHands {
-		fmt.Print("Hand:", hand.Hand)
-		fmt.Println("\tType:", handTypeToString(int(hand.Type)))
-	}
 }
 
 func main() {
@@ -326,7 +230,6 @@ func main() {
 		var x, y Parsed
 
 		line := scanner.Text()
-		//fmt.Fprintf(os.Stderr, "line = '%s'\n", line)
 
 		line = strings.TrimSpace(line)
 		lastSpace := strings.LastIndex(line, " ")
@@ -347,12 +250,7 @@ func main() {
 		}
 		hands = determineHandTypeAndAppend(&x, hands)
 		jokerHands = determineHandTypeAndAppend(&y, jokerHands)
-
-		//fmt.Fprintln(os.Stderr, "Hand  = ", x.Hand)
-		//fmt.Fprintln(os.Stderr, "Bid   = ", x.Bid)
-		//fmt.Fprintln(os.Stderr, "Type  = ", x.Type)
 	}
-
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "reading standard input:", err)
 	}
@@ -363,7 +261,6 @@ func main() {
 		}
 		return less(hands[i].Hand, hands[j].Hand)
 	})
-
 	sort.Slice(jokerHands, func(i, j int) bool {
 		if jokerHands[i].Type != jokerHands[j].Type {
 			return jokerHands[i].Type < jokerHands[j].Type
@@ -371,9 +268,6 @@ func main() {
 		return less(jokerHands[i].Hand, jokerHands[j].Hand)
 	})
 
-	// printHands(jokerHands)
-
 	fmt.Println(totalWinnings(hands))
 	fmt.Println(totalWinnings(jokerHands))
-
 }
