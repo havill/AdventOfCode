@@ -3,3 +3,4 @@ bin/
 input.txt
 input-*.txt
 a.out
+*.c
