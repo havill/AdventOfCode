@@ -126,6 +126,67 @@ func findStartingTile(field [][]Tile) Point {
 	return Point{-1, -1} // return Point{-1, -1} if "starting" is not found
 }
 
+func printField(field [][]Tile) {
+	for _, row := range field {
+		for _, tile := range row {
+			if tile == ground {
+				fmt.Fprint(os.Stdout, ".")
+			} else if tile|footprint != 0 {
+				fmt.Fprint(os.Stdout, "*")
+			} else if tile == starting {
+				fmt.Fprint(os.Stdout, "S")
+			} else if tile|north_south != 0 {
+				fmt.Fprint(os.Stdout, "|")
+			} else if tile|east_west != 0 {
+				fmt.Fprint(os.Stdout, "-")
+			} else if tile|north_east != 0 {
+				fmt.Fprint(os.Stdout, "L")
+			} else if tile|north_west != 0 {
+				fmt.Fprint(os.Stdout, "J")
+			} else if tile|south_west != 0 {
+				fmt.Fprint(os.Stdout, "7")
+			} else if tile|south_east != 0 {
+				fmt.Fprint(os.Stdout, "F")
+			} else {
+				fmt.Fprint(os.Stdout, ".")
+			}
+		}
+		fmt.Fprintln(os.Stdout, "")
+	}
+}
+
+func calculateLoopArea(field [][]Tile) int {
+	area := 0
+
+	for _, row := range field {
+		inside := false
+
+		for x := 0; x < len(row); x++ {
+			if row[x]&footprint != 0 && row[x]&east_west != 0 && row[x]&north_south == 0 {
+				if row[x]&north_south != 0 {
+					fmt.Fprint(os.Stdout, "o")
+				} else {
+					fmt.Fprint(os.Stdout, "*")
+				}
+				continue
+			} else if row[x]&footprint != 0 && !inside {
+				inside = true
+				fmt.Fprint(os.Stdout, "*")
+			} else if row[x]&footprint != 0 && inside {
+				inside = false
+				fmt.Fprint(os.Stdout, "*")
+			} else if inside {
+				area++
+				fmt.Fprint(os.Stdout, "I")
+			} else {
+				fmt.Fprint(os.Stdout, ".")
+			}
+		}
+		fmt.Fprintln(os.Stdout, "")
+	}
+	return area
+}
+
 func main() {
 	var field [][]Tile
 	var animals []Animal
@@ -144,12 +205,14 @@ func main() {
 	start = findStartingTile(field)
 	distance = 0
 
-	choices := availableDirections(field, start)
-	for i := 0; i < len(choices); i++ {
-		animals = append(animals, Animal{start, choices[i], Point{-1, -1}})
-		field[animals[i].current.y][animals[i].current.x] |= footprint
+	if start.x != -1 && start.y != -1 {
+		choices := availableDirections(field, start)
+		for i := 0; i < len(choices); i++ {
+			animals = append(animals, Animal{start, choices[i], Point{-1, -1}})
+			field[animals[i].current.y][animals[i].current.x] |= footprint
+		}
+		distance++
 	}
-	distance++
 
 	for !allTogether(animals) {
 		for i := 0; i < len(animals); i++ {
@@ -165,4 +228,7 @@ func main() {
 		distance++
 	}
 	fmt.Println(distance)
+	fmt.Println(calculateLoopArea(field))
+
+	printField(field)
 }
