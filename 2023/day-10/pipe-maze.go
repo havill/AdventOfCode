@@ -14,13 +14,14 @@ const (
 	south       Tile = 2
 	east        Tile = 4
 	west        Tile = 8
+	footprint   Tile = 16
 	north_south Tile = north | south
 	east_west   Tile = east | west
 	north_east  Tile = north | east
 	north_west  Tile = north | west
 	south_east  Tile = south | east
 	south_west  Tile = south | west
-	starting    Tile = north | south | east | west
+	starting    Tile = north | south | east | west | footprint
 )
 
 type Point struct {
@@ -29,7 +30,6 @@ type Point struct {
 }
 
 type Animal struct {
-	distance int
 	previous Point
 	current  Point
 	next     Point
@@ -39,19 +39,15 @@ func availableDirections(field [][]Tile, p Point) []Point {
 	directions := make([]Point, 0, 4)
 	if field[p.y][p.x]&north == north && p.y > 0 && field[p.y-1][p.x]&south == south {
 		directions = append(directions, Point{p.x, p.y - 1})
-		//fmt.Fprintln(os.Stdout, "availableDirections: north")
 	}
 	if field[p.y][p.x]&south == south && p.y < len(field)-1 && field[p.y+1][p.x]&north == north {
 		directions = append(directions, Point{p.x, p.y + 1})
-		//fmt.Fprintln(os.Stdout, "availableDirections: south")
 	}
 	if field[p.y][p.x]&east == east && p.x < len(field[p.y])-1 && field[p.y][p.x+1]&west == west {
 		directions = append(directions, Point{p.x + 1, p.y})
-		//fmt.Fprintln(os.Stdout, "availableDirections: east")
 	}
 	if field[p.y][p.x]&west == west && p.x > 0 && field[p.y][p.x-1]&east == east {
 		directions = append(directions, Point{p.x - 1, p.y})
-		//fmt.Fprintln(os.Stdout, "availableDirections: west")
 	}
 	return directions
 }
@@ -81,7 +77,6 @@ func allTogether(animals []Animal) bool {
 }
 
 func moveAnimal(a Animal) Animal {
-	a.distance += 1
 	a.previous = a.current
 	a.current = a.next
 	a.next = Point{-1, -1}
@@ -131,55 +126,43 @@ func findStartingTile(field [][]Tile) Point {
 	return Point{-1, -1} // return Point{-1, -1} if "starting" is not found
 }
 
-func findMaxDistanceAnimal(animals []Animal) int {
-	maxDistance := animals[0].distance
-	maxIndex := 0
-
-	for i, animal := range animals {
-		if animal.distance > maxDistance {
-			maxDistance = animal.distance
-			maxIndex = i
-		}
-	}
-
-	return maxIndex
-}
-
 func main() {
 	var field [][]Tile
 	var animals []Animal
 	var start Point
+	var distance int
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := scanner.Text()
 		row := stringToTileRow(line)
 		field = append(field, row)
-		//fmt.Println(row)
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "reading standard input:", err)
 	}
 	start = findStartingTile(field)
+	distance = 0
+
 	choices := availableDirections(field, start)
 	for i := 0; i < len(choices); i++ {
-		animals = append(animals, Animal{1, start, choices[i], Point{-1, -1}})
+		animals = append(animals, Animal{start, choices[i], Point{-1, -1}})
+		field[animals[i].current.y][animals[i].current.x] |= footprint
 	}
+	distance++
 
 	for !allTogether(animals) {
 		for i := 0; i < len(animals); i++ {
-			//fmt.Fprintln(os.Stdout, "before: animals[", i, "] is at Ln ", animals[i].current.y+1, ", Col", animals[i].current.x+1, ", distance ", animals[i].distance)
 			animals[i].next = animals[i].current
 			choices := availableDirections(field, animals[i].current)
 			choices = removePreviousDirection(choices, animals[i])
-			//fmt.Fprintln(os.Stdout, "choices: ", choices)
 			if len(choices) > 0 {
 				animals[i].next = choices[0]
 			}
 			animals[i] = moveAnimal(animals[i])
-			//fmt.Fprintln(os.Stdout, "after : animals[", i, "] is at Ln ", animals[i].current.y+1, ", Col", animals[i].current.x+1, ", distance ", animals[i].distance)
+			field[animals[i].current.y][animals[i].current.x] |= footprint
 		}
+		distance++
 	}
-	distance := findMaxDistanceAnimal(animals)
-	fmt.Println(animals[distance].distance)
+	fmt.Println(distance)
 }
