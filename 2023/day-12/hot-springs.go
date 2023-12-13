@@ -18,9 +18,12 @@ func groupMatchesRecord(re *regexp.Regexp, conditionRecord string) bool {
 func testCombosHelper(re *regexp.Regexp, brokenGroupsSum int, conditionRecord string, current string) int {
 	total := 0
 
+	if strings.Count(current, "#") > brokenGroupsSum {
+		return total // short-circuit the recursion if we've already exceeded the number of broken groups
+	}
 	if len(conditionRecord) == 0 {
 		if groupMatchesRecord(re, current) {
-			fmt.Println(current)
+			//fmt.Println(current)
 			total++
 		}
 		return total
@@ -103,7 +106,7 @@ func main() {
 	//fmt.Println("Please enter some lines of text. Press CTRL+D to end input.")
 	for scanner.Scan() {
 		line := scanner.Text()
-		fmt.Println("You entered: ", line)
+		//fmt.Println("You entered: ", line)
 		left, right := splitString(line)
 		//fmt.Println("Left: ", left)
 		//fmt.Println("Right: ", right)
@@ -114,7 +117,7 @@ func main() {
 		}
 		//fmt.Println("Broken groups: ", brokenGroups)
 		sum := sumArray(brokenGroups)
-		fmt.Println("Sum: ", sum)
+		//fmt.Println("Sum: ", sum)
 		pattern := convertSliceToString(brokenGroups)
 		//fmt.Println("Uncompiled: ", pattern)
 		re, err := regexp.Compile(pattern)
@@ -123,7 +126,7 @@ func main() {
 			return
 		}
 		matches := testAllCombos(re, sum, left)
-		fmt.Println("Matches: ", matches)
+		//fmt.Println("Matches: ", matches)
 		total += matches
 	}
 	if err := scanner.Err(); err != nil {
