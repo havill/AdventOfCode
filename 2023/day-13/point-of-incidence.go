@@ -101,7 +101,7 @@ func numDiffs(a, b string) int {
 	return diff
 }
 
-func partTwo(lines []string) int {
+func findSmudge(lines []string) int {
 	sum := 0
 	for _, image := range images.img {
 		fmt.Fprintln(os.Stderr, "checking for horizontal reflection")
@@ -119,7 +119,7 @@ func partTwo(lines []string) int {
 	return sum
 }
 
-func partOne(lines []string) int {
+func reflectionLines(lines []string) int {
 	parselines(lines)
 
 	sum := 0
@@ -135,7 +135,6 @@ func partOne(lines []string) int {
 			sum += (n + 1)
 		}
 	}
-
 	return sum
 }
 
@@ -179,9 +178,9 @@ func readlines() []string {
 func main() {
 	lines := readlines()
 
-	ans := partOne(lines)
-	fmt.Printf("%d\n", ans)
+	noteSummary := reflectionLines(lines)
+	fmt.Printf("%d\n", noteSummary)
 
-	ans = partTwo(lines)
-	fmt.Printf("%d\n", ans)
+	noteSummary = findSmudge(lines)
+	fmt.Printf("%d\n", noteSummary)
 }
