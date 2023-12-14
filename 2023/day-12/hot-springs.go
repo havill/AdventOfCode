@@ -148,19 +148,21 @@ func main() {
 		}
 		total += testAllCombos(re, sum, left)
 
-		// Part 2
-		unfoldedConditions := repeatString(left, 5)
-		unfoldedBrokenGroups := repeatIntSlice(brokenGroups, 5)
-		//fmt.Println("Unfolded conditions: ", unfoldedConditions)
-		//fmt.Println("Unfolded broken groups: ", unfoldedBrokenGroups)
-		sum = sumArray(unfoldedBrokenGroups)
-		//fmt.Println("Sum: ", sum)
-		pattern = convertSliceToString(unfoldedBrokenGroups)
-		//fmt.Println("Uncompiled: ", pattern)
-		re, _ = regexp.Compile(pattern)
-		matches := testAllCombos(re, sum, unfoldedConditions)
-		//fmt.Println("Matches: ", matches)
-		unfoldedTotal += matches
+		/*
+			// Part 2
+			unfoldedConditions := repeatString(left, 5)
+			unfoldedBrokenGroups := repeatIntSlice(brokenGroups, 5)
+			//fmt.Println("Unfolded conditions: ", unfoldedConditions)
+			//fmt.Println("Unfolded broken groups: ", unfoldedBrokenGroups)
+			sum = sumArray(unfoldedBrokenGroups)
+			//fmt.Println("Sum: ", sum)
+			pattern = convertSliceToString(unfoldedBrokenGroups)
+			//fmt.Println("Uncompiled: ", pattern)
+			re, _ = regexp.Compile(pattern)
+			matches := testAllCombos(re, sum, unfoldedConditions)
+			//fmt.Println("Matches: ", matches)
+			unfoldedTotal += matches
+		*/
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "reading standard input:", err)
