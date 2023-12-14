@@ -7,11 +7,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func groupMatchesRecord(re *regexp.Regexp, conditionRecord string) bool {
 	match := re.MatchString(conditionRecord)
-	//fmt.Println("groupMatchesRecord: ", conditionRecord, match)
+	fmt.Println("groupMatchesRecord: ", conditionRecord, match)
 	return match
 }
 
@@ -116,6 +117,7 @@ func main() {
 	total := 0
 	unfoldedTotal := 0
 	scanner := bufio.NewScanner(os.Stdin)
+	progress := 0
 
 	//fmt.Println("Please enter some lines of text. Press CTRL+D to end input.")
 	for scanner.Scan() {
@@ -124,7 +126,8 @@ func main() {
 		var re *regexp.Regexp
 
 		line := scanner.Text()
-		//fmt.Println("You entered: ", line)
+		progress++
+		fmt.Println("processing line #", progress, "at", time.Now())
 		left, right := splitString(line)
 		//fmt.Println("Left: ", left)
 		//fmt.Println("Right: ", right)
@@ -146,7 +149,6 @@ func main() {
 		total += testAllCombos(re, sum, left)
 
 		// Part 2
-
 		unfoldedConditions := repeatString(left, 5)
 		unfoldedBrokenGroups := repeatIntSlice(brokenGroups, 5)
 		//fmt.Println("Unfolded conditions: ", unfoldedConditions)
