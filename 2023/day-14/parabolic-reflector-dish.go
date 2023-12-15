@@ -55,7 +55,7 @@ func move(dir byte, lines [][]byte) {
 	}
 }
 
-func calc(lines [][]byte) int {
+func rockTotal(lines [][]byte) int {
 	n := 0
 	for i := 0; i < len(lines); i++ {
 		for j := 0; j < len(lines[i]); j++ {
@@ -78,7 +78,7 @@ func cp(lines [][]byte) [][]byte {
 func goNorth(lines [][]byte) {
 	l1 := cp(lines)
 	move('N', l1)
-	fmt.Println(calc(l1))
+	fmt.Println(rockTotal(l1))
 }
 
 func key(lines [][]byte) string {
@@ -117,7 +117,7 @@ func spinCycle(lines [][]byte) {
 	}
 
 	temp := revCache[start+(1000000000-start)%period] // fuck slices
-	fmt.Println(calc(temp))
+	fmt.Println(rockTotal(temp))
 }
 
 func main() {
