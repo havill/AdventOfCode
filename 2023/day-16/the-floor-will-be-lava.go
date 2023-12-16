@@ -133,32 +133,49 @@ func findBeamsAtPosition(beams beamList, x, y int) []beam {
 	return matchingBeams
 }
 
+func setTerminalForegroundColor(r, g, b int) {
+	fmt.Printf("\033[38;2;%d;%d;%dm", r, g, b)
+}
+func setTerminalBackgroundColor(r, g, b int) {
+	fmt.Printf("\033[48;2;%d;%d;%dm", r, g, b)
+}
+func resetTerminalColors() {
+	fmt.Printf("\033[0m")
+}
+func resetCursorToTopLeft(clearScreen bool) {
+	fmt.Printf("\033[0m")
+	fmt.Printf("%s", "\033[H") // move cursor to Ln 1, Col 1
+	if clearScreen {
+		fmt.Printf("%s", "\033[2J") // clear screen
+	}
+}
+
 func debugDiagram(grid gridMatrix, beams beamList) {
 	// let's animate!
-	fmt.Printf("%s", "\033[H") // move cursor to top left
+	resetCursorToTopLeft(false)
 	for y, row := range grid {
 		for x, space := range row {
 			beamAtPosition := findBeamsAtPosition(beams, x, y)
 			if beamAtPosition != nil {
 				if len(beamAtPosition) > 1 {
-					fmt.Printf("%s", "\033[48;2;255;0;0m") // set the background to red
-					fmt.Printf("%s", "\033[38;2;0;0;0m")   // set the foreground to black
+					setTerminalBackgroundColor(255, 0, 0)   // red
+					setTerminalForegroundColor(255, 255, 0) // yellow
 					fmt.Print("*")
-					fmt.Printf("%s", "\033[0m") // restore the background and foreground colors to defaults
+					resetTerminalColors()
 				} else {
 					c := rune(toArrow(int(beamAtPosition[0].xAdvance), int(beamAtPosition[0].yAdvance)))
-					fmt.Printf("%s", "\033[48;2;255;255;0m") // set the background to yellow
-					fmt.Printf("%s", "\033[38;2;0;0;255m")   // set the foreground to blue
+					setTerminalBackgroundColor(255, 255, 0) // yellow
+					setTerminalForegroundColor(0, 0, 255)   // blue
 					fmt.Printf("%c", c)
-					fmt.Printf("%s", "\033[0m") // restore the background and foreground colors to defaults
+					resetTerminalColors()
 				}
 			} else {
 				if space.energized > 0 {
-					fmt.Printf("%s", "\033[48;2;255;255;0m") // set the background to yellow
-					fmt.Printf("%s", "\033[38;2;0;0;0m")     // set the foreground to black
+					setTerminalBackgroundColor(255, 255, 0) // yellow
+					setTerminalForegroundColor(0, 0, 255)   // black
 				}
 				fmt.Print(string(space.containing))
-				fmt.Printf("%s", "\033[0m") // restore the background and foreground colors to defaults
+				resetTerminalColors()
 			}
 		}
 		fmt.Println() // end of row
@@ -183,7 +200,7 @@ func gridDimensions(grid gridMatrix) (int, int) {
 	return width, height
 }
 
-func isBeamInHistory(history beamList, b beam) bool {
+func isBeamInList(history beamList, b beam) bool {
 	for _, old := range history {
 		if old == b {
 			return true
@@ -196,7 +213,7 @@ func gcBeams(width, height int, beams, history beamList) beamList {
 	var newBeams beamList
 	for _, b := range beams {
 		if b.x >= 0 && b.x < width && b.y >= 0 && b.y < height {
-			if !isBeamInHistory(history, b) {
+			if !isBeamInList(history, b) && !isBeamInList(newBeams, b) {
 				newBeams = append(newBeams, b)
 			}
 		}
@@ -270,7 +287,7 @@ func main() {
 		log.Fatalf("Please provide a file name")
 	}
 
-	fmt.Printf("%s", "\033[2J") // clear screen
+	resetCursorToTopLeft(true) // clear screen
 
 	file := os.Args[1]
 	f, err := os.Open(file)
@@ -286,7 +303,7 @@ func main() {
 
 	beams = spawnBeam(beams, 0, 0, east)
 	for len(beams) > 0 {
-		debugDiagram(grid, beams) // debug
+		//debugDiagram(grid, beams) // debug
 
 		beams = deflectOrSplitBeams(grid, beams)
 		heatTiles(grid, beams)
