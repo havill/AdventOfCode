@@ -141,10 +141,16 @@ func debugDiagram(grid gridMatrix, beams beamList) {
 			beamAtPosition := findBeamsAtPosition(beams, x, y)
 			if beamAtPosition != nil {
 				if len(beamAtPosition) > 1 {
+					fmt.Printf("%s", "\033[48;2;255;0;0m") // set the background to red
+					fmt.Printf("%s", "\033[38;2;0;0;0m")   // set the foreground to black
 					fmt.Print("*")
+					fmt.Printf("%s", "\033[0m") // restore the background and foreground colors to defaults
 				} else {
 					c := rune(toArrow(int(beamAtPosition[0].xAdvance), int(beamAtPosition[0].yAdvance)))
+					fmt.Printf("%s", "\033[48;2;255;255;0m") // set the background to yellow
+					fmt.Printf("%s", "\033[38;2;0;0;255m")   // set the foreground to blue
 					fmt.Printf("%c", c)
+					fmt.Printf("%s", "\033[0m") // restore the background and foreground colors to defaults
 				}
 			} else {
 				if space.energized > 0 {
