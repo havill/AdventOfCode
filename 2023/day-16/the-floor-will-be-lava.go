@@ -86,8 +86,8 @@ func spawnBeam(beams beamList, x int, y int, going headingType) beamList {
 	return beams
 }
 
-func loadGrid() (gridMatrix, error) {
-	scanner := bufio.NewScanner(os.Stdin)
+func loadGridFromFile(file os.File) (gridMatrix, error) {
+	scanner := bufio.NewScanner(&file)
 	var grid gridMatrix
 
 	for scanner.Scan() {
@@ -133,7 +133,9 @@ func findBeamsAtPosition(beams beamList, x, y int) []beam {
 	return matchingBeams
 }
 
-func showEnergizedDiagram(grid gridMatrix, beams beamList) {
+func debugDiagram(grid gridMatrix, beams beamList) {
+	// let's animate!
+	fmt.Printf("%s", "\033[H") // move cursor to top left
 	for y, row := range grid {
 		for x, space := range row {
 			beamAtPosition := findBeamsAtPosition(beams, x, y)
@@ -144,15 +146,20 @@ func showEnergizedDiagram(grid gridMatrix, beams beamList) {
 					c := rune(toArrow(int(beamAtPosition[0].xAdvance), int(beamAtPosition[0].yAdvance)))
 					fmt.Printf("%c", c)
 				}
-			} else if space.energized > 0 {
-				fmt.Print("#")
 			} else {
-				fmt.Print(".")
+				if space.energized > 0 {
+					fmt.Printf("%s", "\033[48;2;255;255;0m") // set the background to yellow
+					fmt.Printf("%s", "\033[38;2;0;0;0m")     // set the foreground to black
+				}
+				fmt.Print(string(space.containing))
+				fmt.Printf("%s", "\033[0m") // restore the background and foreground colors to defaults
 			}
 		}
 		fmt.Println() // end of row
 	}
-	fmt.Println() // blank line
+	// pause until they press Enter
+	//reader := bufio.NewReader(os.Stdin)
+	//reader.ReadString('\n')
 }
 
 func heatTiles(grid gridMatrix, beams beamList) {
@@ -253,23 +260,33 @@ func deflectOrSplitBeams(grid gridMatrix, beams beamList) beamList {
 }
 
 func main() {
-	grid, err := loadGrid()
-	if err != nil {
-		log.Fatalf("Failed to load grid: %v", err)
+	if len(os.Args) < 2 {
+		log.Fatalf("Please provide a file name")
 	}
+
+	fmt.Printf("%s", "\033[2J") // clear screen
+
+	file := os.Args[1]
+	f, err := os.Open(file)
+	if err != nil {
+		log.Fatalf("Failed to open file: %v", err)
+	}
+	defer f.Close()
+
+	grid, _ := loadGridFromFile(*f)
 	x, y := gridDimensions(grid)
 
 	var beams, history beamList
 
 	beams = spawnBeam(beams, 0, 0, east)
 	for len(beams) > 0 {
-		showEnergizedDiagram(grid, beams) // debug
+		debugDiagram(grid, beams) // debug
 
+		beams = deflectOrSplitBeams(grid, beams)
 		heatTiles(grid, beams)
 		history = advanceBeams(beams, history)
 		beams = gcBeams(x, y, beams, history)
-		beams = deflectOrSplitBeams(grid, beams)
-		fmt.Println(beams) // debug
+		//fmt.Println(beams) // debug
 	}
 
 	count := energizedTiles(grid)
