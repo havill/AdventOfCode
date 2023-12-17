@@ -20,8 +20,6 @@ const (
 	right horizontalDirection = +1
 )
 
-type beamList []beam
-
 type headingType rune
 
 const (
@@ -32,11 +30,13 @@ const (
 )
 
 type beam struct {
-	yAdvance verticalDirection
+	x        int // Col - 1
+	y        int // Ln - 1
 	xAdvance horizontalDirection
-	x        int
-	y        int
+	yAdvance verticalDirection
 }
+
+type beamMap map[beam]int
 
 type spaceType rune
 
@@ -68,7 +68,7 @@ func toArrow(x, y int) headingType {
 	return '?'
 }
 
-func spawnBeam(beams beamList, x int, y int, going headingType) beamList {
+func spawnBeam(beams beamMap, x int, y int, going headingType) {
 	newBeam := beam{x: x, y: y}
 
 	switch going {
@@ -82,8 +82,7 @@ func spawnBeam(beams beamList, x int, y int, going headingType) beamList {
 		newBeam.xAdvance = left
 	}
 
-	beams = append(beams, newBeam)
-	return beams
+	beams[newBeam] = 1
 }
 
 func loadGridFromFile(file os.File) (gridMatrix, error) {
@@ -123,9 +122,9 @@ func energizedTiles(grid gridMatrix) int {
 	return count
 }
 
-func findBeamsAtPosition(beams beamList, x, y int) []beam {
+func findBeamsAtPosition(beams beamMap, x, y int) []beam {
 	var matchingBeams []beam
-	for _, b := range beams {
+	for b := range beams {
 		if b.x == x && b.y == y {
 			matchingBeams = append(matchingBeams, b)
 		}
@@ -143,16 +142,16 @@ func resetTerminalColors() {
 	fmt.Printf("\033[0m")
 }
 func resetCursorToTopLeft(clearScreen bool) {
-	fmt.Printf("\033[0m")
 	fmt.Printf("%s", "\033[H") // move cursor to Ln 1, Col 1
 	if clearScreen {
 		fmt.Printf("%s", "\033[2J") // clear screen
 	}
 }
 
-func debugDiagram(grid gridMatrix, beams beamList) {
-	// let's animate!
-	resetCursorToTopLeft(false)
+func debugDiagram(grid gridMatrix, beams beamMap, interactive bool) {
+	if !interactive {
+		resetCursorToTopLeft(interactive)
+	}
 	for y, row := range grid {
 		for x, space := range row {
 			beamAtPosition := findBeamsAtPosition(beams, x, y)
@@ -172,7 +171,7 @@ func debugDiagram(grid gridMatrix, beams beamList) {
 			} else {
 				if space.energized > 0 {
 					setTerminalBackgroundColor(255, 255, 0) // yellow
-					setTerminalForegroundColor(0, 0, 255)   // black
+					setTerminalForegroundColor(0, 0, 0)     // black
 				}
 				fmt.Print(string(space.containing))
 				resetTerminalColors()
@@ -180,14 +179,20 @@ func debugDiagram(grid gridMatrix, beams beamList) {
 		}
 		fmt.Println() // end of row
 	}
-	// pause until they press Enter
-	//reader := bufio.NewReader(os.Stdin)
-	//reader.ReadString('\n')
+	if interactive {
+		fmt.Println("beams    =", beams)
+		fmt.Printf("energized= %d\n", energizedTiles(grid))
+		// pause until they press Enter
+		var reader *bufio.Reader = bufio.NewReader(os.Stdin)
+		reader.ReadString('\n')
+	} else {
+		fmt.Println()
+	}
 }
 
-func heatTiles(grid gridMatrix, beams beamList) {
-	for _, b := range beams {
-		grid[b.y][b.x].energized++
+func heatTiles(grid gridMatrix, beams beamMap) {
+	for k, heat := range beams {
+		grid[k.y][k.x].energized += heat
 	}
 }
 
@@ -200,86 +205,80 @@ func gridDimensions(grid gridMatrix) (int, int) {
 	return width, height
 }
 
-func isBeamInList(history beamList, b beam) bool {
-	for _, old := range history {
-		if old == b {
-			return true
-		}
-	}
-	return false
-}
+func gcBeams(beams, history beamMap, width, height int) beamMap {
+	newBeams := make(beamMap)
 
-func gcBeams(width, height int, beams, history beamList) beamList {
-	var newBeams beamList
-	for _, b := range beams {
-		if b.x >= 0 && b.x < width && b.y >= 0 && b.y < height {
-			if !isBeamInList(history, b) && !isBeamInList(newBeams, b) {
-				newBeams = append(newBeams, b)
-			}
+	for k, v := range beams {
+		_, found := history[k]
+		if k.x >= 0 && k.x < width && k.y >= 0 && k.y < height && !found {
+			newBeams[k] = v
 		}
 	}
 	return newBeams
 }
 
-func advanceBeams(beams, history beamList) beamList {
-	for i := range beams {
-		history = append(history, beams[i])
-		beams[i].x += int(beams[i].xAdvance)
-		beams[i].y += int(beams[i].yAdvance)
+func advanceBeams(beams, history beamMap) beamMap {
+	newBeams := make(beamMap)
+
+	for k, v := range beams {
+		history[k]++
+		k.x += int(k.xAdvance)
+		k.y += int(k.yAdvance)
+		newBeams[k] = v
 	}
-	return history
+	return newBeams
 }
 
-func deflectOrSplitBeams(grid gridMatrix, beams beamList) beamList {
-	newBeams := make(beamList, 0, len(beams))
+func deflectOrSplitBeams(beams beamMap, grid gridMatrix) beamMap {
+	newBeams := make(beamMap)
 
-	for i := range beams {
-		tile := grid[beams[i].y][beams[i].x]
-		if tile.containing != emptySpace {
-			if tile.containing == forwardMirror {
-				if beams[i].xAdvance > 0 {
-					beams[i].xAdvance = 0
-					beams[i].yAdvance = up
-				} else if beams[i].xAdvance < 0 {
-					beams[i].xAdvance = 0
-					beams[i].yAdvance = down
-				} else if beams[i].yAdvance > 0 {
-					beams[i].yAdvance = 0
-					beams[i].xAdvance = left
-				} else if beams[i].yAdvance < 0 {
-					beams[i].yAdvance = 0
-					beams[i].xAdvance = right
-				}
-			} else if tile.containing == backwardMirror {
-				if beams[i].xAdvance > 0 {
-					beams[i].xAdvance = 0
-					beams[i].yAdvance = down
-				} else if beams[i].xAdvance < 0 {
-					beams[i].xAdvance = 0
-					beams[i].yAdvance = up
-				} else if beams[i].yAdvance < 0 {
-					beams[i].yAdvance = 0
-					beams[i].xAdvance = left
-				} else if beams[i].yAdvance > 0 {
-					beams[i].yAdvance = 0
-					beams[i].xAdvance = right
-				}
-			} else if tile.containing == verticalSplitter {
-				if beams[i].yAdvance == 0 {
-					newBeams = spawnBeam(newBeams, beams[i].x, beams[i].y, north)
-					beams[i].xAdvance = 0
-					beams[i].yAdvance = down
-				}
-			} else if tile.containing == horizontalSplitter {
-				if beams[i].xAdvance == 0 {
-					newBeams = spawnBeam(newBeams, beams[i].x, beams[i].y, east)
-					beams[i].xAdvance = left
-					beams[i].yAdvance = 0
-				}
+	for k, v := range beams {
+		tile := grid[k.y][k.x]
+		switch tile.containing {
+		case forwardMirror:
+			if k.xAdvance > 0 {
+				k.xAdvance = 0
+				k.yAdvance = up
+			} else if k.xAdvance < 0 {
+				k.xAdvance = 0
+				k.yAdvance = down
+			} else if k.yAdvance > 0 {
+				k.yAdvance = 0
+				k.xAdvance = left
+			} else if k.yAdvance < 0 {
+				k.yAdvance = 0
+				k.xAdvance = right
+			}
+		case backwardMirror:
+			if k.xAdvance > 0 {
+				k.xAdvance = 0
+				k.yAdvance = down
+			} else if k.xAdvance < 0 {
+				k.xAdvance = 0
+				k.yAdvance = up
+			} else if k.yAdvance < 0 {
+				k.yAdvance = 0
+				k.xAdvance = left
+			} else if k.yAdvance > 0 {
+				k.yAdvance = 0
+				k.xAdvance = right
+			}
+		case verticalSplitter:
+			if k.yAdvance == 0 {
+				spawnBeam(newBeams, k.x, k.y, north)
+				k.xAdvance = 0
+				k.yAdvance = down
+			}
+		case horizontalSplitter:
+			if k.xAdvance == 0 {
+				spawnBeam(newBeams, k.x, k.y, east)
+				k.xAdvance = left
+				k.yAdvance = 0
 			}
 		}
+		newBeams[k] = v
 	}
-	return append(beams, newBeams...)
+	return newBeams
 }
 
 func main() {
@@ -287,7 +286,7 @@ func main() {
 		log.Fatalf("Please provide a file name")
 	}
 
-	resetCursorToTopLeft(true) // clear screen
+	resetCursorToTopLeft(true) // for interactive debug
 
 	file := os.Args[1]
 	f, err := os.Open(file)
@@ -299,20 +298,20 @@ func main() {
 	grid, _ := loadGridFromFile(*f)
 	x, y := gridDimensions(grid)
 
-	var beams, history beamList
+	beams := make(beamMap)
+	history := make(beamMap)
 
-	beams = spawnBeam(beams, 0, 0, east)
+	spawnBeam(beams, 0, 0, east)
 	for len(beams) > 0 {
-		//debugDiagram(grid, beams) // debug
+		beams = gcBeams(beams, history, x, y)
 
-		beams = deflectOrSplitBeams(grid, beams)
+		debugDiagram(grid, beams, false) // debug
+
 		heatTiles(grid, beams)
-		history = advanceBeams(beams, history)
-		beams = gcBeams(x, y, beams, history)
-		//fmt.Println(beams) // debug
+		beams = deflectOrSplitBeams(beams, grid)
+		beams = advanceBeams(beams, history)
+
 	}
-
 	count := energizedTiles(grid)
-	fmt.Printf("Number of energized tiles: %d\n", count)
-
+	fmt.Printf("Part 1: Number of energized tiles = %d\n", count)
 }
