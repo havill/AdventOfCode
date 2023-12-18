@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -127,7 +128,6 @@ func resetCursorToTopLeft(clearScreen bool) {
 	}
 }
 func debugPrintLagoon(lagoon graph) {
-	resetCursorToTopLeft(true)
 	for y := lagoon.minY; y <= lagoon.maxY; y++ {
 		for x := lagoon.minX; x <= lagoon.maxX; x++ {
 			ground := lagoon.cube[coordinate{x, y}]
@@ -144,6 +144,31 @@ func debugPrintLagoon(lagoon graph) {
 		fmt.Println()
 	}
 	fmt.Println()
+}
+
+func fillPolygonStack(area graph, color rgba, x int, y int) {
+	stack := []coordinate{{x, y}}
+
+	for len(stack) > 0 {
+		// Pop a coordinate from the stack.
+		where := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		// Check if the coordinate is out of bounds or if it's an edge pixel.
+		pixel := area.cube[where]
+		if where.x < area.minX || where.y < area.minY || where.y > area.maxY || where.x > area.maxX || pixel.Hole {
+			continue
+		}
+
+		// Fill this pixel.
+		area.cube[where] = Ground{true, color}
+
+		// Push the neighboring coordinates to the stack.
+		stack = append(stack, coordinate{where.x - 1, where.y}) // Left
+		stack = append(stack, coordinate{where.x + 1, where.y}) // Right
+		stack = append(stack, coordinate{where.x, where.y - 1}) // Up
+		stack = append(stack, coordinate{where.x, where.y + 1}) // Down
+	}
 }
 
 func fillPolygon(area graph, color rgba, x int, y int) {
@@ -176,10 +201,24 @@ func countHoles(lagoon graph) int {
 	return count
 }
 
+func decodeHexadecimal(hex string) (int, string, error) {
+	left := hex[1:6]
+	right := hex[6:]
+	result, err := strconv.ParseInt(left, 16, 64)
+	if err != nil {
+		return 0, "", err
+	}
+	return int(result), right, nil
+}
+
 func main() {
 	var lagoon graph
 	x, y := 0, 0
 	lagoon.cube = make(map[coordinate]Ground)
+
+	part2 := flag.Bool("part2", false, "--- Part Two ---")
+	debug := flag.Bool("debug", false, "show the before and after maps")
+	flag.Parse()
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -195,6 +234,12 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error extracting RGB: %v\n", err)
 			continue
 		}
+
+		if *part2 {
+			meters, direction, _ = decodeHexadecimal(color)
+			rgb = rgba{255, 255, 255, 0}
+		}
+
 		for meters > 0 {
 			where := coordinate{x, y}
 			lagoon = dig(where, rgb, lagoon)
@@ -207,8 +252,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error reading from stdin: %v\n", err)
 	}
 
-	//debugPrintLagoon(lagoon)
-	fillPolygon(lagoon, rgba{255, 0, 0, 0}, 1, 1)
-	debugPrintLagoon(lagoon)
+	if *debug {
+		resetCursorToTopLeft(true)
+		debugPrintLagoon(lagoon)
+	}
+	//fillPolygon(lagoon, rgba{255, 0, 0, 0}, 1, 1)
+	fillPolygonStack(lagoon, rgba{255, 0, 0, 0}, 1, 1)
+	if *debug {
+		fmt.Println("After filling:")
+		debugPrintLagoon(lagoon)
+	}
 	fmt.Printf("Lava Area: %dm\u00B3\n", countHoles(lagoon))
 }
