@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-//go:embed input.txt
 var input string
 
 func init() {
