@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -78,39 +77,36 @@ func parseList(list string) []string {
 	return items
 }
 
-func parseTernaryOp(expr string) (subj string, operator Comparison, value int, obj string, err error) {
-	parts := strings.Fields(expr)
-	if len(parts) != 3 {
-		return "", 0, 0, "", fmt.Errorf("invalid expression format")
-	}
-
-	subj = parts[0]
-
-	switch parts[1] {
-	case "<":
-		operator = LessThan
-	case "=":
-		operator = EqualTo
-	case ">":
-		operator = GreaterThan
-	default:
-		return "", 0, 0, "", fmt.Errorf("invalid operator")
-	}
-
-	valueStrs := strings.Split(parts[2], ":")
-	if len(valueStrs) == 2 {
-		value, err = strconv.Atoi(valueStrs[0])
-		if err != nil {
-			return "", 0, 0, "", fmt.Errorf("invalid value: %v", err)
-		}
-		obj = valueStrs[1]
+func parseBinaryOp(expr string) (left string, op Comparison, right string, err error) {
+	if strings.Contains(expr, "<") {
+		parts := strings.Split(expr, "<")
+		return strings.TrimSpace(parts[0]), LessThan, strings.TrimSpace(parts[1]), nil
+	} else if strings.Contains(expr, "=") {
+		parts := strings.Split(expr, "=")
+		return strings.TrimSpace(parts[0]), EqualTo, strings.TrimSpace(parts[1]), nil
+	} else if strings.Contains(expr, ">") {
+		parts := strings.Split(expr, ">")
+		return strings.TrimSpace(parts[0]), GreaterThan, strings.TrimSpace(parts[1]), nil
 	} else {
-		value, err = strconv.Atoi(parts[2])
-		if err != nil {
-			return "", 0, 0, "", fmt.Errorf("invalid value: %v", err)
-		}
+		return "", 0, "", fmt.Errorf("invalid expression: %s", expr)
 	}
-	return subj, operator, value, obj, nil
+}
+
+func parseTernaryOp(expr string) (left string, op Comparison, action string, err error) {
+	parts := strings.Split(expr, ":")
+	if len(parts) != 2 {
+		return "", 0, "", fmt.Errorf("invalid ternary expression: %s", expr)
+	}
+
+	condition := strings.TrimSpace(parts[0])
+	action = strings.TrimSpace(parts[1])
+
+	left, op, _, err = parseBinaryOp(condition)
+	if err != nil {
+		return "", 0, "", fmt.Errorf("invalid condition in ternary expression: %s", condition)
+	}
+
+	return left, op, action, nil
 }
 
 func main() {
