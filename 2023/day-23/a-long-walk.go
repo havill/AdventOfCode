@@ -151,7 +151,7 @@ func WalkToBottom(solutions *[]int, slippery bool, hikingTrails [][]Tile, steppe
 		steps += west
 	}
 	if AtGoal(hikingTrails, x, y) {
-		fmt.Println("Found a solution. Steps: ", steps)
+		fmt.Println(steps)
 		*solutions = append(*solutions, steps)
 		return steps
 	}
