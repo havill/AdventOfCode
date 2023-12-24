@@ -68,8 +68,6 @@ func CanGoUp(slippery bool, hikingTrails [][]Tile, stepped Hiked, x, y int) bool
 	}
 	if slippery && hikingTrails[y][x] != Path && hikingTrails[y][x] != North {
 		return false
-	} else if hikingTrails[y][x] == Forest {
-		return false
 	}
 	return hikingTrails[y-1][x] != Forest && !stepped[y-1][x]
 }
@@ -80,8 +78,6 @@ func CanGoRight(slippery bool, hikingTrails [][]Tile, stepped Hiked, x, y int) b
 		return false
 	}
 	if slippery && hikingTrails[y][x] != Path && hikingTrails[y][x] != East {
-		return false
-	} else if hikingTrails[y][x] == Forest {
 		return false
 	}
 	return hikingTrails[y][x+1] != Forest && !stepped[y][x+1]
@@ -94,8 +90,6 @@ func CanGoDown(slippery bool, hikingTrails [][]Tile, stepped Hiked, x, y int) bo
 	}
 	if slippery && hikingTrails[y][x] != Path && hikingTrails[y][x] != South {
 		return false
-	} else if hikingTrails[y][x] == Forest {
-		return false
 	}
 	return hikingTrails[y+1][x] != Forest && !stepped[y+1][x]
 }
@@ -105,8 +99,6 @@ func CanGoLeft(slippery bool, hikingTrails [][]Tile, stepped Hiked, x, y int) bo
 		return false
 	}
 	if slippery && hikingTrails[y][x] != Path && hikingTrails[y][x] != West {
-		return false
-	} else if hikingTrails[y][x] == Forest {
 		return false
 	}
 	return hikingTrails[y][x-1] != Forest && !stepped[y][x-1]
@@ -159,7 +151,7 @@ func WalkToBottom(solutions *[]int, slippery bool, hikingTrails [][]Tile, steppe
 		steps += west
 	}
 	if AtGoal(hikingTrails, x, y) {
-		//fmt.Println("Steps from ", x, y, ": ", steps)
+		fmt.Println("Found a solution. Steps: ", steps)
 		*solutions = append(*solutions, steps)
 		return steps
 	}
