@@ -10,11 +10,11 @@ type Tile rune
 
 const (
 	Path   Tile = '.'
-	Forest      = '#'
-	North       = '^'
-	East        = '>'
-	South       = 'v'
-	West        = '<'
+	Forest Tile = '#'
+	North  Tile = '^'
+	East   Tile = '>'
+	South  Tile = 'v'
+	West   Tile = '<'
 )
 
 type Hiked [][]bool
@@ -30,9 +30,10 @@ func PrintMap(hikingTrails [][]Tile, stepped Hiked) {
 		}
 		fmt.Println()
 	}
+	fmt.Println()
 }
 
-func readTileMatrix() ([][]Tile, error) {
+func ReadTileMatix() ([][]Tile, error) {
 	scanner := bufio.NewScanner(os.Stdin)
 	var matrix [][]Tile
 
@@ -52,8 +53,138 @@ func readTileMatrix() ([][]Tile, error) {
 	return matrix, nil
 }
 
+func cloneHiked(original Hiked) Hiked {
+	clone := make(Hiked, len(original))
+	for i := range original {
+		clone[i] = make([]bool, len(original[i]))
+		copy(clone[i], original[i])
+	}
+	return clone
+}
+
+func CanGoUp(hikingTrails [][]Tile, stepped Hiked, x, y int) bool {
+	if y-1 < 0 {
+		return false
+	}
+	if hikingTrails[y][x] != North && hikingTrails[y][x] != Path {
+		return false
+	}
+	return hikingTrails[y-1][x] != Forest && !stepped[y-1][x]
+}
+
+func CanGoRight(hikingTrails [][]Tile, stepped Hiked, x, y int) bool {
+	width := len(hikingTrails[0])
+	if x+1 >= width {
+		return false
+	}
+	if hikingTrails[y][x] != East && hikingTrails[y][x] != Path {
+		return false
+	}
+	return hikingTrails[y][x+1] != Forest && !stepped[y][x+1]
+}
+
+func CanGoDown(hikingTrails [][]Tile, stepped Hiked, x, y int) bool {
+	height := len(hikingTrails)
+	if y+1 >= height {
+		return false
+	}
+	if hikingTrails[y][x] != South && hikingTrails[y][x] != Path {
+		return false
+	}
+	return hikingTrails[y+1][x] != Forest && !stepped[y+1][x]
+}
+
+func CanGoLeft(hikingTrails [][]Tile, stepped Hiked, x, y int) bool {
+	if x-1 < 0 {
+		return false
+	}
+	if hikingTrails[y][x] != West && hikingTrails[y][x] != Path {
+		return false
+	}
+	return hikingTrails[y][x-1] != Forest && !stepped[y][x-1]
+}
+
+func AtGoal(hikingTrails [][]Tile, x, y int) bool {
+	height := len(hikingTrails)
+	return y+1 >= height
+}
+
+func WalkToBottom(solutions *[]int, hikingTrails [][]Tile, stepped Hiked, steps, x, y int) int {
+	width := len(hikingTrails[0])
+	height := len(hikingTrails)
+
+	north, east, south, west := 0, 0, 0, 0
+
+	if x < 0 || x >= width || y < 0 || y >= height {
+		return 0
+	}
+	stepped[y][x] = true
+	steps++
+	//PrintMap(hikingTrails, stepped)
+	if CanGoUp(hikingTrails, stepped, x, y) {
+		//fmt.Println("Going up from ", x, y)
+		newMap := cloneHiked(stepped)
+		north = WalkToBottom(solutions, hikingTrails, newMap, steps, x, y-1)
+	}
+	if CanGoRight(hikingTrails, stepped, x, y) {
+		//fmt.Println("Going right from ", x, y)
+		newMap := cloneHiked(stepped)
+		east = WalkToBottom(solutions, hikingTrails, newMap, steps, x+1, y)
+	}
+	if CanGoDown(hikingTrails, stepped, x, y) {
+		//fmt.Println("Going down from ", x, y)
+		newMap := cloneHiked(stepped)
+		south = WalkToBottom(solutions, hikingTrails, newMap, steps, x, y+1)
+	}
+	if CanGoLeft(hikingTrails, stepped, x, y) {
+		//fmt.Println("Going left from ", x, y)
+		newMap := cloneHiked(stepped)
+		west = WalkToBottom(solutions, hikingTrails, newMap, steps, x-1, y)
+	}
+	if north >= east && north >= south && north >= west {
+		steps += north
+	} else if east >= north && east >= south && east >= west {
+		steps += east
+	} else if south >= north && south >= east && south >= west {
+		steps += south
+	} else if west >= north && west >= east && west >= south {
+		steps += west
+	}
+	if AtGoal(hikingTrails, x, y) {
+		//fmt.Println("Steps from ", x, y, ": ", steps)
+		*solutions = append(*solutions, steps)
+		return steps
+	}
+	return 0
+}
+
+func FindStart(hikingTrails [][]Tile) (int, int) {
+	for x, tile := range hikingTrails[0] {
+		if tile != Forest {
+			return x, 0
+		}
+	}
+	return -1, -1
+}
+
+func maxInt(arr []int) (max int, err error) {
+	if len(arr) == 0 {
+		return 0, fmt.Errorf("array is empty")
+	}
+
+	max = arr[0]
+	for _, value := range arr {
+		if value > max {
+			max = value
+		}
+	}
+	return max, nil
+}
+
 func main() {
-	hikingTrails, err := readTileMatrix()
+	solutions := []int{}
+
+	hikingTrails, err := ReadTileMatix()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading tile matrix: %v\n", err)
 		os.Exit(1)
@@ -63,6 +194,10 @@ func main() {
 	for i := range hikingTrails {
 		stepped[i] = make([]bool, len(hikingTrails[i]))
 	}
+	//PrintMap(hikingTrails, stepped)
 
-	PrintMap(hikingTrails, stepped)
+	x, y := FindStart(hikingTrails)
+	WalkToBottom(&solutions, hikingTrails, stepped, -1, x, y)
+	longestHike, _ := maxInt(solutions)
+	fmt.Printf("Part 1: %d\n", longestHike)
 }
