@@ -1,6 +1,7 @@
 *.exe
 bin/
 input.txt
+output.out
 input-*.txt
 a.out
 *.c
