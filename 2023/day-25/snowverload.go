@@ -18,19 +18,19 @@ func NewGraph() *Graph {
 	}
 }
 
-func (g *Graph) AddEdge(node1, node2 string, undirected bool) {
+func (g *Graph) AddEdge(node1, node2 string, directed bool) {
 	// Add edge from node1 to node2
 	g.edge[node1] = append(g.edge[node1], node2)
 
-	if undirected {
+	if !directed {
 		// Add edge from node2 to node1
 		g.edge[node2] = append(g.edge[node2], node1)
 	}
 }
 
-func (g *Graph) DeleteEdge(node1, node2 string, undirected bool) {
+func (g *Graph) DeleteEdge(node1, node2 string, directed bool) {
 	g.edge[node1] = remove(g.edge[node1], node2)
-	if undirected {
+	if !directed {
 		g.edge[node2] = remove(g.edge[node2], node1)
 	}
 }
@@ -120,6 +120,33 @@ func (g *Graph) CountComponents() int {
 	return count
 }
 
+func (g *Graph) EdgeExists(node1, node2 string) bool {
+	for _, neighbor := range g.edge[node1] {
+		if neighbor == node2 {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *Graph) IterateEdges(directed bool) {
+	nodes := make([]string, 0, len(g.edge))
+	for node := range g.edge {
+		nodes = append(nodes, node)
+	}
+
+	for i := 0; i < len(nodes); i++ {
+		start := i
+		if !directed {
+			start = i + 1
+		}
+		for j := start; j < len(nodes); j++ {
+			node1, node2 := nodes[i], nodes[j]
+			// Do something with the edge from node1 to node2
+		}
+	}
+}
+
 func (g *Graph) String() string {
 	var result strings.Builder
 	for node, neighbors := range g.edge {
@@ -142,7 +169,7 @@ func main() {
 		re := regexp.MustCompile(`[:\s]+`)
 		nodes := re.Split(line, -1)
 		for i := 1; i < len(nodes); i++ {
-			g.AddEdge(nodes[0], nodes[i], true)
+			g.AddEdge(nodes[0], nodes[i], false)
 		}
 	}
 
@@ -152,8 +179,19 @@ func main() {
 
 	fmt.Println(g)
 
-	fmt.Println("Does the graph contain a cycle?", g.DetectCycle())
-	fmt.Println("Number of nodes in the graph:", g.CountNodes())
-	fmt.Println("Number of edges in the graph:", g.CountEdges())
-	fmt.Println("Number of connected components in the graph:", g.CountComponents())
+	fmt.Println("BEFORE DELETION")
+	fmt.Println("Does the graph contain cycle(s)?", g.DetectCycle())
+	fmt.Println("Number of nodes in the graph   :", g.CountNodes())
+	fmt.Println("Number of edges in the graph   :", g.CountEdges())
+	fmt.Println("Number of components in graph  :", g.CountComponents())
+
+	g.DeleteEdge("hfx", "pzl", false)
+	g.DeleteEdge("bvb", "cmg", false)
+	g.DeleteEdge("nvd", "jqt", false)
+
+	fmt.Println("AFTER DELETION")
+	fmt.Println("Does the graph contain cycle(s)?", g.DetectCycle())
+	fmt.Println("Number of nodes in the graph   :", g.CountNodes())
+	fmt.Println("Number of edges in the graph   :", g.CountEdges())
+	fmt.Println("Number of components in graph  :", g.CountComponents())
 }
