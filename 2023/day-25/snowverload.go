@@ -230,24 +230,14 @@ func FindWiresToCut(g *Graph, groups, toDisconnect int) *Graph {
 		// Make a copy of the graph
 		newGraph := CloneGraph(g)
 
-		if debug {
-			fmt.Print("Removing ")
-		}
 		for _, edge := range set {
-			if debug {
-				fmt.Print("-", edge)
-			}
 			newGraph.DeleteEdge(edge.a, edge.b, false)
 		}
 		newGroups := newGraph.CountComponents()
-		if debug {
-			fmt.Println("=", newGroups)
-		}
 		if newGroups == groups {
 			return newGraph
 		}
 	}
-
 	return nil
 }
 
