@@ -2,20 +2,38 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
+
+	combinations "github.com/mxschmitt/golang-combinations"
 )
 
 type Graph struct {
 	edge map[string][]string
 }
 
+type EdgePair struct {
+	a string
+	b string
+}
+
 func NewGraph() *Graph {
 	return &Graph{
 		edge: make(map[string][]string),
 	}
+}
+
+func CloneGraph(g *Graph) *Graph {
+	newGraph := NewGraph()
+	for node, edges := range g.edge {
+		newEdges := make([]string, len(edges))
+		copy(newEdges, edges)
+		newGraph.edge[node] = newEdges
+	}
+	return newGraph
 }
 
 func (g *Graph) AddEdge(node1, node2 string, directed bool) {
@@ -85,14 +103,14 @@ func (g *Graph) DetectCycle() bool {
 }
 
 func (g *Graph) CountEdges() int {
-	edgeMap := make(map[string]bool)
+	edgeMap := make(map[EdgePair]bool)
 	for node, neighbors := range g.edge {
 		for _, neighbor := range neighbors {
 			// Ensure the edge is always represented in the same way,
 			// regardless of the order of the nodes
-			edge := node + "-" + neighbor
+			edge := EdgePair{node, neighbor}
 			if node > neighbor {
-				edge = neighbor + "-" + node
+				edge = EdgePair{neighbor, node}
 			}
 			edgeMap[edge] = true
 		}
@@ -106,6 +124,35 @@ func (g *Graph) CountNodes() int {
 		g.SimpleDFS(node, visited)
 	}
 	return len(visited)
+}
+
+func CountNodesInComponents(g *Graph) []int {
+	visited := make(map[string]bool)
+	counts := []int{}
+
+	for node := range g.edge {
+		if visited[node] {
+			continue
+		}
+
+		count := CountDFS(g, node, visited)
+		counts = append(counts, count)
+	}
+
+	return counts
+}
+
+func CountDFS(g *Graph, node string, visited map[string]bool) int {
+	visited[node] = true
+	count := 1
+
+	for _, neighbor := range g.edge[node] {
+		if !visited[neighbor] {
+			count += CountDFS(g, neighbor, visited)
+		}
+	}
+
+	return count
 }
 
 func (g *Graph) CountComponents() int {
@@ -129,22 +176,18 @@ func (g *Graph) EdgeExists(node1, node2 string) bool {
 	return false
 }
 
-func (g *Graph) IterateEdges(directed bool) {
-	nodes := make([]string, 0, len(g.edge))
-	for node := range g.edge {
-		nodes = append(nodes, node)
+func (g *Graph) IterateEdges(directed bool) []EdgePair {
+	var list []EdgePair
+
+	for node, edges := range g.edge {
+		for _, edge := range edges {
+			if directed || node < edge {
+				list = append(list, EdgePair{a: node, b: edge})
+			}
+		}
 	}
 
-	for i := 0; i < len(nodes); i++ {
-		start := i
-		if !directed {
-			start = i + 1
-		}
-		for j := start; j < len(nodes); j++ {
-			node1, node2 := nodes[i], nodes[j]
-			// Do something with the edge from node1 to node2
-		}
-	}
+	return list
 }
 
 func (g *Graph) String() string {
@@ -159,7 +202,51 @@ func (g *Graph) String() string {
 	return result.String()
 }
 
+func arrayProduct(nums []int) int {
+	product := 1
+	for _, num := range nums {
+		product *= num
+	}
+	return product
+}
+
+// note that the Advent of Code problem uses the term "components" to refer to
+// groups of snow producing components (iow, nodes / vertexes in CompSci terms)
+// connected by "wires" (iow, edges in CompSci terms), not the traditional usage
+func FindWiresToCut(g *Graph, groups, toDisconnect int) *Graph {
+	// Find all edges in the graph
+	wires := g.IterateEdges(false)
+	combos := combinations.Combinations(wires, toDisconnect)
+
+	// Iterate over all edges and remove them from the graph
+	// If the graph contains a cycle after removing the edge,
+	// then it is a critical edge
+	for _, set := range combos {
+		// Make a copy of the graph
+		newGraph := CloneGraph(g)
+
+		for _, edge := range set {
+			newGraph.DeleteEdge(edge.a, edge.b, false)
+		}
+
+		if newGraph.CountComponents() == groups {
+			return newGraph
+		}
+	}
+
+	return nil
+}
+
+var debug bool
+
 func main() {
+	flag.BoolVar(&debug, "debug", false, "enable debug mode")
+	flag.Parse()
+
+	if debug {
+		fmt.Println("Debug mode enabled")
+	}
+
 	g := NewGraph()
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -177,21 +264,32 @@ func main() {
 		fmt.Fprintln(os.Stderr, "reading standard input:", err)
 	}
 
-	fmt.Println(g)
+	if debug {
+		fmt.Println(g)
+		fmt.Println(g.IterateEdges(false))
+	}
 
 	fmt.Println("BEFORE DELETION")
 	fmt.Println("Does the graph contain cycle(s)?", g.DetectCycle())
 	fmt.Println("Number of nodes in the graph   :", g.CountNodes())
 	fmt.Println("Number of edges in the graph   :", g.CountEdges())
 	fmt.Println("Number of components in graph  :", g.CountComponents())
+	fmt.Println("Number of nodes in components  :", CountNodesInComponents(g))
 
-	g.DeleteEdge("hfx", "pzl", false)
-	g.DeleteEdge("bvb", "cmg", false)
-	g.DeleteEdge("nvd", "jqt", false)
+	solution := FindWiresToCut(g, 2, 3)
+
+	// https://adventofcode.com/2023/day/25
+	// solution = g.CloneGraph(solution)
+	// solution.DeleteEdge("hfx", "pzl", false)
+	// solution.DeleteEdge("bvb", "cmg", false)
+	// solution.DeleteEdge("nvd", "jqt", false)
 
 	fmt.Println("AFTER DELETION")
-	fmt.Println("Does the graph contain cycle(s)?", g.DetectCycle())
-	fmt.Println("Number of nodes in the graph   :", g.CountNodes())
-	fmt.Println("Number of edges in the graph   :", g.CountEdges())
-	fmt.Println("Number of components in graph  :", g.CountComponents())
+	fmt.Println("Does the graph contain cycle(s)?", solution.DetectCycle())
+	fmt.Println("Number of nodes in the graph   :", solution.CountNodes())
+	fmt.Println("Number of edges in the graph   :", solution.CountEdges())
+	fmt.Println("Number of components in graph  :", solution.CountComponents())
+	fmt.Println("Number of nodes in components  :", CountNodesInComponents(solution))
+
+	fmt.Println("Part 1: ", arrayProduct(CountNodesInComponents(solution)))
 }

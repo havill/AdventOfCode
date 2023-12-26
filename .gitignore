@@ -1,7 +1,8 @@
-*.exe
 bin/
-input.txt
-output.out
-input-*.txt
+input*.txt
+output*.txt
 a.out
+*.exe
 *.c
+*.sum
+*.mod
