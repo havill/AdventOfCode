@@ -11,6 +11,8 @@ import (
 	combinations "github.com/mxschmitt/golang-combinations"
 )
 
+var debug bool
+
 type Graph struct {
 	edge map[string][]string
 }
@@ -218,6 +220,9 @@ func FindWiresToCut(g *Graph, groups, toDisconnect int) *Graph {
 	wires := g.IterateEdges(false)
 	combos := combinations.Combinations(wires, toDisconnect)
 
+	if debug {
+		fmt.Println("trying", len(combos), "combinations of", len(wires), "wires")
+	}
 	// Iterate over all edges and remove them from the graph
 	// If the graph contains a cycle after removing the edge,
 	// then it is a critical edge
@@ -225,19 +230,26 @@ func FindWiresToCut(g *Graph, groups, toDisconnect int) *Graph {
 		// Make a copy of the graph
 		newGraph := CloneGraph(g)
 
+		if debug {
+			fmt.Print("Removing ")
+		}
 		for _, edge := range set {
+			if debug {
+				fmt.Print("-", edge)
+			}
 			newGraph.DeleteEdge(edge.a, edge.b, false)
 		}
-
-		if newGraph.CountComponents() == groups {
+		newGroups := newGraph.CountComponents()
+		if debug {
+			fmt.Println("=", newGroups)
+		}
+		if newGroups == groups {
 			return newGraph
 		}
 	}
 
 	return nil
 }
-
-var debug bool
 
 func main() {
 	flag.BoolVar(&debug, "debug", false, "enable debug mode")
@@ -247,7 +259,7 @@ func main() {
 		fmt.Println("Debug mode enabled")
 	}
 
-	g := NewGraph()
+	before := NewGraph()
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -256,7 +268,7 @@ func main() {
 		re := regexp.MustCompile(`[:\s]+`)
 		nodes := re.Split(line, -1)
 		for i := 1; i < len(nodes); i++ {
-			g.AddEdge(nodes[0], nodes[i], false)
+			before.AddEdge(nodes[0], nodes[i], false)
 		}
 	}
 
@@ -265,18 +277,18 @@ func main() {
 	}
 
 	if debug {
-		fmt.Println(g)
-		fmt.Println(g.IterateEdges(false))
+		//fmt.Println(g)
+		//fmt.Println(g.IterateEdges(false))
 	}
 
 	fmt.Println("BEFORE DELETION")
-	fmt.Println("Does the graph contain cycle(s)?", g.DetectCycle())
-	fmt.Println("Number of nodes in the graph   :", g.CountNodes())
-	fmt.Println("Number of edges in the graph   :", g.CountEdges())
-	fmt.Println("Number of components in graph  :", g.CountComponents())
-	fmt.Println("Number of nodes in components  :", CountNodesInComponents(g))
+	fmt.Println("Does the graph contain cycle(s)?", before.DetectCycle())
+	fmt.Println("Number of nodes in the graph   :", before.CountNodes())
+	fmt.Println("Number of edges in the graph   :", before.CountEdges())
+	fmt.Println("Number of components in graph  :", before.CountComponents())
+	fmt.Println("Number of nodes in components  :", CountNodesInComponents(before))
 
-	solution := FindWiresToCut(g, 2, 3)
+	after := FindWiresToCut(before, 2, 3)
 
 	// https://adventofcode.com/2023/day/25
 	// solution = g.CloneGraph(solution)
@@ -284,12 +296,17 @@ func main() {
 	// solution.DeleteEdge("bvb", "cmg", false)
 	// solution.DeleteEdge("nvd", "jqt", false)
 
-	fmt.Println("AFTER DELETION")
-	fmt.Println("Does the graph contain cycle(s)?", solution.DetectCycle())
-	fmt.Println("Number of nodes in the graph   :", solution.CountNodes())
-	fmt.Println("Number of edges in the graph   :", solution.CountEdges())
-	fmt.Println("Number of components in graph  :", solution.CountComponents())
-	fmt.Println("Number of nodes in components  :", CountNodesInComponents(solution))
+	if after == nil {
+		fmt.Println("No solution found")
+		return
+	} else {
+		fmt.Println("AFTER DELETION")
+		fmt.Println("Does the graph contain cycle(s)?", after.DetectCycle())
+		fmt.Println("Number of nodes in the graph   :", after.CountNodes())
+		fmt.Println("Number of edges in the graph   :", after.CountEdges())
+		fmt.Println("Number of components in graph  :", after.CountComponents())
+		fmt.Println("Number of nodes in components  :", CountNodesInComponents(after))
 
-	fmt.Println("Part 1: ", arrayProduct(CountNodesInComponents(solution)))
+		fmt.Println("Part 1: ", arrayProduct(CountNodesInComponents(after)))
+	}
 }
