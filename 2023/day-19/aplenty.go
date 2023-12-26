@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -110,7 +111,7 @@ func parseTernaryOp(expr string) (left string, op Comparison, action string, err
 }
 
 func main() {
-	var w Workflows = make(Workflows, 0)
+	//var w Workflows = make(Workflows, 0)
 	var p Parts = make(Parts, 0)
 
 	flag.Parse()
@@ -129,20 +130,25 @@ func main() {
 			list := parseList(right)
 			for _, item := range list {
 				fmt.Println("Item:", item)
-				id, _, val, _, err := parseTernaryOp(item)
+				id, _, val, err := parseTernaryOp(item)
 				if err != nil {
 					fmt.Println("Error parsing binary expression:", err)
 					continue
 				}
+				i, err := strconv.Atoi(val)
+				if err != nil {
+					fmt.Println("Error converting string to integer:", err)
+					continue
+				}
 				switch id {
 				case "x":
-					p = append(p, Ratings{Cool: val})
+					p = append(p, Ratings{Cool: i})
 				case "m":
-					p = append(p, Ratings{Musical: val})
+					p = append(p, Ratings{Musical: i})
 				case "a":
-					p = append(p, Ratings{Aerodynamic: val})
+					p = append(p, Ratings{Aerodynamic: i})
 				case "s":
-					p = append(p, Ratings{Shiny: val})
+					p = append(p, Ratings{Shiny: i})
 				default:
 					fmt.Println("Unknown identifier:", id)
 				}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -284,9 +283,11 @@ func getAllCombinations(input []string) (int, error) {
 	}
 }
 
+/*
 func main() {
 	abs, _ := filepath.Abs("input.txt")
 	output, _ := ReadInput(abs)
 	fmt.Println(getSumRatingNumbers(output))
 	fmt.Println(getAllCombinations(output))
 }
+*/
