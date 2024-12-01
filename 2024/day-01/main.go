@@ -35,6 +35,20 @@ func sumSlice(slice []int) int {
 	return sum
 }
 
+func similarityScore(leftList, rightList []int) []int {
+	var similarityScore []int
+	for _, leftValue := range leftList {
+		appearances := 0
+		for _, rightValue := range rightList {
+			if leftValue == rightValue {
+				appearances++
+			}
+		}
+		similarityScore = append(similarityScore, leftValue*appearances)
+	}
+	return similarityScore
+}
+
 func main() {
 	var leftList []int
 	var rightList []int
@@ -74,4 +88,10 @@ func main() {
 
 	sum := sumSlice(distances)
 	fmt.Println("Sum of Distances:", sum)
+
+	similarity := similarityScore(leftList, rightList)
+	//fmt.Println("Similarity Score:", similarity)
+
+	totalSimilarityScore := sumSlice(similarity)
+	fmt.Println("Total Similarity Score:", totalSimilarityScore)
 }
