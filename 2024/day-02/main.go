@@ -30,6 +30,37 @@ func isSafe(report []int) bool {
 	return true
 }
 
+func problemDampener(report []int) bool {
+	//fmt.Printf("testing %v\n", report)
+	if isSafe(report) {
+		//fmt.Println("...Safe without removing any level")
+		return true
+	}
+
+	for i := 0; i < len(report); i++ {
+		var badLevelRemoved []int
+		badLevelRemoved = append(badLevelRemoved, report[:i]...)
+		badLevelRemoved = append(badLevelRemoved, report[i+1:]...)
+		//fmt.Printf("...testing with %v\n", badLevelRemoved)
+		if isSafe(badLevelRemoved) {
+			/*
+				ending := "th"
+				if i == 0 {
+					ending = "st"
+				} else if i == 1 {
+					ending = "nd"
+				} else if i == 2 {
+					ending = "rd"
+				}
+				fmt.Printf("... Safe by removing the %d%s level, %d\n", i+1, ending, report[i])
+			*/
+			return true
+		}
+	}
+	//fmt.Println("...Unsafe regardless of which level is removed")
+	return false
+}
+
 func main() {
 	var reports [][]int
 
@@ -60,4 +91,12 @@ func main() {
 		}
 	}
 	fmt.Printf("Number of Safe Reports: %d\n", safeCount)
+
+	safeCount = 0
+	for _, report := range reports {
+		if problemDampener(report) {
+			safeCount++
+		}
+	}
+	fmt.Printf("Number of Safe Reports with Dampening: %d\n", safeCount)
 }
