@@ -81,13 +81,18 @@ func main() {
 	}
 
 	// Print the 2D array
-	for _, line := range wordSearch {
-		for _, char := range line {
-			fmt.Printf("%c ", char)
+	/*
+		for _, line := range wordSearch {
+			for _, char := range line {
+				fmt.Printf("%c ", char)
+			}
+			fmt.Println()
 		}
-		fmt.Println()
-	}
+	*/
 
 	count := xmasSearcher(wordSearch)
 	fmt.Println("Number of 'XMAS' sequences found:", count)
+
+	count = crossMasSearcher(wordSearch)
+	fmt.Println("Number of cross 'MAS' sequences found:", count)
 }
