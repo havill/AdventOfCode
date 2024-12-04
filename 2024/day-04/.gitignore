@@ -1,0 +1,4 @@
+go.mod
+input-*.txt
+sample-input-*.txt
+*.exe
