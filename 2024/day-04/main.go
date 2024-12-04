@@ -38,6 +38,30 @@ func xmasSearcher(wordSearch [][]rune) int {
 	return count
 }
 
+func crossMasSearcher(wordSearch [][]rune) int {
+	rows := len(wordSearch)
+	cols := len(wordSearch[0])
+	count := 0
+
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			if wordSearch[i][j] == 'A' {
+				// Check upper-left and lower-right
+				if i > 0 && j > 0 && i < rows-1 && j < cols-1 {
+					if wordSearch[i-1][j-1] == 'M' && wordSearch[i+1][j+1] == 'S' || wordSearch[i-1][j-1] == 'S' && wordSearch[i+1][j+1] == 'M' {
+						// Check upper-right and lower-left
+						if wordSearch[i-1][j+1] == 'M' && wordSearch[i+1][j-1] == 'S' || wordSearch[i-1][j+1] == 'S' && wordSearch[i+1][j-1] == 'M' {
+							count++
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return count
+}
+
 func main() {
 	var wordSearch [][]rune
 	scanner := bufio.NewScanner(os.Stdin)
