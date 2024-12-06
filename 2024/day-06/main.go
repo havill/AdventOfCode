@@ -85,7 +85,7 @@ func traveledRoute(lab [][]rune) int {
 	count := 0
 	for _, row := range lab {
 		for _, char := range row {
-			if char == 'X' {
+			if char != '.' && char != '#' && char != 'O' {
 				count++
 			}
 		}
@@ -94,7 +94,7 @@ func traveledRoute(lab [][]rune) int {
 }
 
 func moveGuard(x, y, dx, dy int, lab [][]rune) (int, int) {
-	lab[y][x] = 'X'
+	// lab[y][x] = 'X'
 	x += dx
 	y += dy
 	return x, y
@@ -115,8 +115,8 @@ func clockwiseTurn(dx, dy int) (int, int) {
 	}
 }
 
-func directionToHex(dir Direction) string {
-	return fmt.Sprintf("%X", int(dir))
+func directionToHex(dir Direction) rune {
+	return rune(fmt.Sprintf("%X", int(dir))[0])
 }
 
 func directionFromDelta(dx, dy int) Direction {
@@ -196,13 +196,20 @@ func main() {
 		copy(originLab[i], lab[i])
 	}
 
-	lab[y][x] = '0'
+	lab[y][x] = directionToHex(directionFromDelta(dx, dy))
+	fmt.Println("Initial direction:", lab[y][x])
 
 	for stillOnMap(x, y, lab) {
 		for isBlocked(lab, x, y, dx, dy) {
 			dx, dy = clockwiseTurn(dx, dy)
 		}
-		lab[y][x] = 'X'
+		if lab[y][x] == '.' {
+			lab[y][x] = '0'
+		}
+		fmt.Printf("Before direction: '%c'\n", lab[y][x])
+		lab[y][x] = directionToHex(hexToDirection(lab[y][x]) | directionFromDelta(dx, dy))
+		fmt.Printf("After direction: '%c'\n\n", lab[y][x])
+
 		x, y = moveGuard(x, y, dx, dy, lab)
 	}
 
