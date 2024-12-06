@@ -89,20 +89,42 @@ func middlePageNumber(pages []int) int {
 	return pages[middleIndex]
 }
 
-func main() {
-	rules, updates := loadParseInput()
-	fmt.Println("Page ordering rules:", rules)
-	fmt.Println("Updates:", updates)
-
-	sum := 0
-	for _, update := range updates {
-		if isCorrectOrder(rules, update) {
-			fmt.Println("Correct order:", update)
-			sum += middlePageNumber(update)
-		} else {
-			fmt.Println("Incorrect order:", update)
+func reorderUntilCorrect(rules map[int][]int, update []int) []int {
+	for i, pageNumber := range update {
+		rule := rules[pageNumber]
+		for j := 0; j < i; j++ {
+			if contains(rule, update[j]) {
+				for k := j; k < len(update)-1; k++ {
+					tooEarly := update[k]
+					update[k] = update[k+1]
+					update[k+1] = tooEarly
+					if isCorrectOrder(rules, update) {
+						break
+					}
+				}
+			}
 		}
 	}
+	return update
+}
 
-	fmt.Println("Sum of middle page numbers:", sum)
+func main() {
+	rules, updates := loadParseInput()
+
+	middleCorrectSums := 0
+	middleIncorrectSums := 0
+
+	for _, update := range updates {
+		if isCorrectOrder(rules, update) {
+			middleCorrectSums += middlePageNumber(update)
+		} else {
+			newOrder := reorderUntilCorrect(rules, update)
+			fmt.Println("Reordered to correct:", newOrder)
+			middleIncorrectSums += middlePageNumber(newOrder)
+		}
+	}
+	fmt.Print("Middle page number correct sums: ")
+	fmt.Println(middleCorrectSums)
+	fmt.Print("Middle page number incorrect sums: ")
+	fmt.Println(middleIncorrectSums)
 }
