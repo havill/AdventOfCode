@@ -119,6 +119,43 @@ func directionToHex(dir Direction) rune {
 	return rune(fmt.Sprintf("%X", int(dir))[0])
 }
 
+func directionToBoxDrawing(dir Direction) rune {
+	switch dir {
+	case North:
+		return '╵'
+	case South:
+		return '╷'
+	case East:
+		return '╶'
+	case West:
+		return '╴'
+	case North | South:
+		return '│'
+	case East | West:
+		return '─'
+	case North | East:
+		return '└'
+	case North | West:
+		return '┘'
+	case South | East:
+		return '┌'
+	case South | West:
+		return '┐'
+	case North | South | East:
+		return '├'
+	case North | South | West:
+		return '┤'
+	case North | East | West:
+		return '┴'
+	case South | East | West:
+		return '┬'
+	case North | South | East | West:
+		return '┼'
+	default:
+		return '·'
+	}
+}
+
 func directionFromDelta(dx, dy int) Direction {
 	switch {
 	case dx == 0 && dy <= -1:
